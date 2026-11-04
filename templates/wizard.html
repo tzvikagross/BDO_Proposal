@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>BDO Proposal Generator</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='wizard.css') }}">
+</head>
+<body>
+<header class="top">
+  <div class="bar"><span class="brand">BDO</span><span>Proposal Generator</span>
+    <a href="#" id="historyLink" class="hist">Previous proposals</a></div>
+  <ol class="steps" id="steps">
+    <li data-step="1" class="on">1. Client details</li>
+    <li data-step="2">2. Services &amp; fees</li>
+    <li data-step="3">3. Generate</li>
+  </ol>
+</header>
+
+<main>
+<!-- STEP 1 -->
+<section class="step on" id="step-1">
+  <h1>Client details</h1>
+  <div class="grid2">
+    <label>Company (client) name *<input id="company" required placeholder="e.g. GSE Mezzanine 2 L.P."></label>
+    <label>Opportunity number<input id="opportunity" placeholder="000000"></label>
+    <label>Contact person – salutation
+      <select id="salutation"><option>Mr.</option><option>Ms.</option><option>Mrs.</option><option>Dr.</option><option value="">(none)</option></select></label>
+    <label>Contact person – name<input id="contact" placeholder="e.g. Ofer Zolty"></label>
+    <label>Proposal date<input id="date" type="date"></label>
+  </div>
+
+  <h2>Type of client</h2>
+  <div class="types" id="types"></div>
+  <label class="wide">Proposal title (cover page)<input id="title"></label>
+
+  <h2>Engagement team</h2>
+  <div class="checks" id="team"></div>
+
+  <details class="scope"><summary>Scope of operations <small>(optional – shown as its own slide / section)</small></summary>
+    <div class="grid2" id="scope"></div>
+  </details>
+
+  <div class="nav"><span></span><button class="btn" data-next="2">Next: services &amp; fees →</button></div>
+</section>
+
+<!-- STEP 2 -->
+<section class="step" id="step-2">
+  <h1>Services &amp; fees</h1>
+  <p class="hint">Service groups for the selected client type are switched on. Untick any service you don't want, edit fees/units/wording, or add your own lines. Each group becomes a separate table (PPTX) and a separate sub-section in the HTML proposal.</p>
+  <div id="groups"></div>
+  <details class="more"><summary>Other service groups</summary><div id="groupsMore"></div></details>
+  <div class="nav"><button class="btn2" data-next="1">← Back</button><button class="btn" data-next="3">Next: generate →</button></div>
+</section>
+
+<!-- STEP 3 -->
+<section class="step" id="step-3">
+  <h1>Generate proposal</h1>
+  <div class="summary" id="summary"></div>
+  <h2>Output formats</h2>
+  <div class="checks">
+    <label><input type="checkbox" name="fmt" value="pptx" checked> PowerPoint (.pptx)</label>
+    <label><input type="checkbox" name="fmt" value="pdf" checked> PDF</label>
+    <label><input type="checkbox" name="fmt" value="html" checked> Interactive HTML (tabs + digital signing)</label>
+  </div>
+  <div class="nav"><button class="btn2" data-next="2">← Back</button><button class="btn" id="generate">Generate</button></div>
+  <div id="result" class="result"></div>
+</section>
+
+<section class="step" id="step-history">
+  <h1>Previous proposals</h1>
+  <table class="hist-table" id="histTable"></table>
+  <div class="nav"><button class="btn2" data-next="1">← Back to wizard</button><span></span></div>
+</section>
+</main>
+<script src="{{ url_for('static', filename='wizard.js') }}"></script>
+</body>
+</html>

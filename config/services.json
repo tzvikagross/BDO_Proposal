@@ -1,0 +1,601 @@
+{
+  "_comment": "Service catalog. Each group becomes one fee table (PPTX), one sub-section of the 'Proposed Services & Fees' tab (HTML) and one table in the signed PDF. Rows are either {\"type\":\"subheader\"} or {\"type\":\"item\"}. 'fee' is the default amount (number or free text such as 'Included'); 'unit' is shown next to it (Monthly, Annual, One time...). 'description' lines are rendered as bullets.",
+  "client_types": {
+    "accounting": {
+      "label": "Accounting client",
+      "proposal_title": "Accounting & Outsourcing Services",
+      "groups": [
+        "audit_tax",
+        "company_secretary",
+        "setup",
+        "accounting",
+        "payroll",
+        "other_tax",
+        "vat_rep",
+        "hourly_rates"
+      ],
+      "team": [
+        "tzvika",
+        "lea",
+        "racheli"
+      ]
+    },
+    "payroll": {
+      "label": "Payroll only client",
+      "proposal_title": "Payroll Services",
+      "groups": [
+        "payroll",
+        "hourly_rates"
+      ],
+      "team": [
+        "tzvika",
+        "racheli"
+      ]
+    },
+    "fund_admin": {
+      "label": "Fund Admin client",
+      "proposal_title": "Fund Administration Services",
+      "groups": [
+        "fund_services",
+        "fund_compliance",
+        "hourly_rates"
+      ],
+      "team": [
+        "tzvika",
+        "tzippora"
+      ]
+    }
+  },
+  "groups": [
+    {
+      "id": "audit_tax",
+      "section": "Audit, Tax & Corporate Services",
+      "title": "Audit & Tax Services",
+      "currency": "USD",
+      "rows": [
+        {
+          "type": "subheader",
+          "text": "Audit and Tax"
+        },
+        {
+          "type": "item",
+          "id": "audit_fs",
+          "fee": 4500,
+          "unit": "Annual",
+          "description": [
+            "Audit financial statements"
+          ]
+        },
+        {
+          "type": "item",
+          "id": "tax_filing",
+          "fee": 3500,
+          "unit": "Annual",
+          "description": [
+            "Tax filing, preparation and audit"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "company_secretary",
+      "section": "Audit, Tax & Corporate Services",
+      "title": "Company Secretary Services",
+      "currency": "USD",
+      "rows": [
+        {
+          "type": "subheader",
+          "text": "Company secretary"
+        },
+        {
+          "type": "item",
+          "id": "cosec_setup",
+          "fee": 500,
+          "unit": "One time",
+          "description": [
+            "Set up rep"
+          ]
+        },
+        {
+          "type": "item",
+          "id": "cosec_annual",
+          "fee": 150,
+          "unit": "Monthly",
+          "description": [
+            "Annual compliance filing + 2 ad-hoc filings (change of director etc.)"
+          ]
+        },
+        {
+          "type": "item",
+          "id": "cosec_adhoc",
+          "fee": 450,
+          "unit": "Per case",
+          "description": [
+            "Other ad-hoc filings (change of director etc.)"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "setup",
+      "section": "Audit, Tax & Corporate Services",
+      "title": "Set up",
+      "currency": "USD",
+      "rows": [
+        {
+          "type": "item",
+          "id": "tax_files",
+          "fee": 1500,
+          "unit": "One time",
+          "description": [
+            "Opening Tax files"
+          ]
+        },
+        {
+          "type": "item",
+          "id": "local_address",
+          "fee": 720,
+          "unit": "Annually",
+          "description": [
+            "Local address"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "accounting",
+      "section": "Accounting services",
+      "title": "Services",
+      "currency": "USD",
+      "rows": [
+        {
+          "type": "subheader",
+          "text": "Monthly Bookkeeping"
+        },
+        {
+          "type": "item",
+          "id": "bk_5",
+          "fee": 750,
+          "unit": "Monthly",
+          "description": [
+            "Monthly bookkeeping – up to 5 AP invoices"
+          ]
+        },
+        {
+          "type": "item",
+          "id": "bk_15",
+          "fee": 1250,
+          "unit": "Monthly",
+          "description": [
+            "Monthly bookkeeping – up to 15 AP invoices"
+          ],
+          "include": false
+        },
+        {
+          "type": "item",
+          "id": "bk_50",
+          "fee": 2000,
+          "unit": "Monthly",
+          "description": [
+            "Monthly bookkeeping – up to 50 AP invoices"
+          ],
+          "include": false
+        },
+        {
+          "type": "subheader",
+          "text": "Compliance filing"
+        },
+        {
+          "type": "item",
+          "id": "compliance",
+          "fee": 350,
+          "unit": "Monthly",
+          "description": [
+            "Compliance filing (WHT, VAT, CIT, SoSec)"
+          ]
+        },
+        {
+          "type": "subheader",
+          "text": "Controller"
+        },
+        {
+          "type": "item",
+          "id": "controller",
+          "fee": 150,
+          "unit": "Per hour",
+          "description": [
+            "Monthly Reporting Package (TB, BS & PL)",
+            "I/C reconciliations",
+            "Invoice coding",
+            "Compilation of annual SFS",
+            "Audit assistance",
+            "Tax audits and other regulatory requirements",
+            "Payment Processing (upload to bank)",
+            "AP Assistance"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "payroll",
+      "section": "Payroll services",
+      "title": "Services",
+      "currency": "USD",
+      "rows": [
+        {
+          "type": "subheader",
+          "text": "Payroll"
+        },
+        {
+          "type": "item",
+          "id": "pr_setup",
+          "fee": 150,
+          "unit": "Per Employee",
+          "description": [
+            "Payroll Setup"
+          ]
+        },
+        {
+          "type": "item",
+          "id": "pr_fixed",
+          "fee": 350,
+          "unit": "Monthly",
+          "description": [
+            "Monthly Fixed cost (including monthly and annual compliance reporting)"
+          ]
+        },
+        {
+          "type": "item",
+          "id": "pr_slip",
+          "fee": 50,
+          "unit": "Monthly",
+          "description": [
+            "Monthly calculation – per slip"
+          ]
+        },
+        {
+          "type": "item",
+          "id": "pr_included",
+          "fee": "Included",
+          "unit": "",
+          "description": [
+            "Monthly and annual compliance reporting",
+            "Liaising with pension operator / pension funds",
+            "Providing information for Maternity leave and others"
+          ]
+        },
+        {
+          "type": "item",
+          "id": "pr_onboarding",
+          "fee": 150,
+          "unit": "Per case",
+          "description": [
+            "New Employee on boarding / Layoff"
+          ]
+        },
+        {
+          "type": "item",
+          "id": "pr_hr",
+          "fee": 125,
+          "unit": "Hourly",
+          "description": [
+            "HR Admin"
+          ]
+        },
+        {
+          "type": "item",
+          "id": "pr_pension_adv",
+          "fee": 180,
+          "unit": "Per case",
+          "description": [
+            "Advisory to leaving employee regarding pension (Optional)"
+          ]
+        },
+        {
+          "type": "item",
+          "id": "pr_reports",
+          "fee": 100,
+          "unit": "Hourly",
+          "description": [
+            "Special management reports"
+          ]
+        },
+        {
+          "type": "item",
+          "id": "pr_g2n",
+          "fee": 350,
+          "unit": "Monthly",
+          "description": [
+            "Manual G2N"
+          ]
+        },
+        {
+          "type": "item",
+          "id": "pr_pension",
+          "fee": 150,
+          "unit": "Monthly + 8 PePP",
+          "description": [
+            "Pension Administration"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "fund_services",
+      "section": "Fund administration services",
+      "title": "Services",
+      "currency": "ILS",
+      "footnotes": "fund",
+      "rows": [
+        {
+          "type": "subheader",
+          "text": "Investor relations services",
+          "note": "30 Investors, 1B Commitment"
+        },
+        {
+          "type": "item",
+          "id": "fa_ir",
+          "fee": 5000,
+          "unit": "Monthly",
+          "description": [
+            "Maintain investors data base (contact, bank details etc.)",
+            "Managing investor relations",
+            "Quarterly Capital accounts",
+            "Carried Interest calculation",
+            "Capital Calls",
+            "Capital Distributions"
+          ]
+        },
+        {
+          "type": "item",
+          "id": "fa_bk",
+          "fee": 4500,
+          "unit": "Monthly",
+          "description": [
+            "Bookkeeping Services"
+          ]
+        },
+        {
+          "type": "item",
+          "id": "fa_controller",
+          "fee": 7000,
+          "unit": "Monthly",
+          "description": [
+            "Fund controller – with annual audited Financial Statements & quarterly reviewed financials"
+          ]
+        },
+        {
+          "type": "item",
+          "id": "fa_loans",
+          "fee": 4000,
+          "unit": "Monthly",
+          "description": [
+            "Loan Servicing & Repayment Tracking – for every 10 loans"
+          ]
+        },
+        {
+          "type": "item",
+          "id": "fa_wht",
+          "fee": 750,
+          "unit": "One-time",
+          "description": [
+            "Obtain withholding certificate"
+          ]
+        },
+        {
+          "type": "item",
+          "id": "fa_admin",
+          "fee": 450,
+          "unit": "Hourly",
+          "description": [
+            "Financial Admin assistance"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "fund_compliance",
+      "section": "Fund establishment & regulatory compliance",
+      "title": "Services",
+      "currency": "ILS",
+      "footnotes": "fund",
+      "rows": [
+        {
+          "type": "subheader",
+          "text": "Establishment"
+        },
+        {
+          "type": "item",
+          "id": "fc_setup",
+          "fee": 5000,
+          "unit": "One time",
+          "description": [
+            "Investor data collection and set up"
+          ]
+        },
+        {
+          "type": "subheader",
+          "text": "FATCA & CRS"
+        },
+        {
+          "type": "item",
+          "id": "fc_report",
+          "fee": 3000,
+          "unit": "Per report with data (FATCA/CRS)",
+          "description": [
+            "Generation of XML file",
+            "Filing annual FATCA report & CRS report"
+          ]
+        },
+        {
+          "type": "item",
+          "id": "fc_nil",
+          "fee": 750,
+          "unit": "Per Nil report (FATCA/CRS)",
+          "description": [
+            "Filing Nil FATCA / CRS report"
+          ]
+        },
+        {
+          "type": "item",
+          "id": "fc_admin",
+          "fee": 400,
+          "unit": "Hourly",
+          "description": [
+            "Financial Admin assistance"
+          ]
+        },
+        {
+          "type": "subheader",
+          "text": "AML & KYC"
+        },
+        {
+          "type": "item",
+          "id": "fc_aml",
+          "fee": 1000,
+          "unit": "One time, per investor",
+          "description": [
+            "AML",
+            "Review KYC & AML documentation",
+            "Assistance with clients' classifications for both FATCA & CRS"
+          ]
+        },
+        {
+          "type": "item",
+          "id": "fc_aml_recurring",
+          "fee": 1000,
+          "unit": "Per recurring investor",
+          "description": [
+            "AML & KYC review for recurring investor"
+          ]
+        },
+        {
+          "type": "item",
+          "id": "fc_worldcheck",
+          "fee": 200,
+          "unit": "Annual, per investor",
+          "description": [
+            "World-check"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "other_tax",
+      "section": "Additional services",
+      "title": "Other Tax Services",
+      "currency": "USD",
+      "rows": [
+        {
+          "type": "item",
+          "id": "tp_memo",
+          "fee": 10500,
+          "unit": "One time",
+          "description": [
+            "TP memo (assuming one benchmark)"
+          ]
+        },
+        {
+          "type": "item",
+          "id": "intl_tax",
+          "fee": 300,
+          "unit": "Per hour",
+          "description": [
+            "International tax advisory (Partner hours)"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "vat_rep",
+      "section": "Additional services",
+      "title": "VAT Representation",
+      "currency": "USD",
+      "rows": [
+        {
+          "type": "item",
+          "id": "vat_setup",
+          "fee": 1000,
+          "unit": "One time",
+          "description": [
+            "VAT rep set up"
+          ]
+        },
+        {
+          "type": "item",
+          "id": "vat_rep_monthly",
+          "fee": 1500,
+          "unit": "Monthly",
+          "description": [
+            "VAT representation"
+          ]
+        },
+        {
+          "type": "item",
+          "id": "il_director",
+          "fee": 750,
+          "unit": "Monthly",
+          "description": [
+            "IL director"
+          ],
+          "include": false
+        }
+      ]
+    },
+    {
+      "id": "hourly_rates",
+      "section": "Additional services",
+      "title": "Miscellaneous – Hourly Rates",
+      "fee_header": "Hourly Cost",
+      "currency": "USD",
+      "rows": [
+        {
+          "type": "item",
+          "id": "hr_partner",
+          "fee": 300,
+          "unit": "",
+          "description": [
+            "Partner"
+          ]
+        },
+        {
+          "type": "item",
+          "id": "hr_sm",
+          "fee": 250,
+          "unit": "",
+          "description": [
+            "Senior Manager"
+          ]
+        },
+        {
+          "type": "item",
+          "id": "hr_manager",
+          "fee": 150,
+          "unit": "",
+          "description": [
+            "Manager"
+          ]
+        },
+        {
+          "type": "item",
+          "id": "hr_associate",
+          "fee": 95,
+          "unit": "",
+          "description": [
+            "Associate"
+          ]
+        },
+        {
+          "type": "item",
+          "id": "hr_bookkeeper",
+          "fee": 75,
+          "unit": "",
+          "description": [
+            "Bookkeeper"
+          ]
+        }
+      ],
+      "bullets": false
+    }
+  ]
+}

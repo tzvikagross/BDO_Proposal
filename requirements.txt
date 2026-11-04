@@ -1,0 +1,9 @@
+flask>=3.0
+python-pptx>=1.0
+lxml>=5.0
+reportlab>=4.0
+pyhanko>=0.25
+cryptography>=42
+pypdfium2>=4.0   # only for scripts/build_assets.py
+Pillow>=10.0     # only for scripts/build_assets.py
+pytest>=8.0
