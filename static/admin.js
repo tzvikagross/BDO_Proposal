@@ -1,12 +1,13 @@
 (async function () {
   const $ = (s, el = document) => el.querySelector(s);
   const $$ = (s, el = document) => [...el.querySelectorAll(s)];
+  const BASE = window.APP_BASE || '';   // set when the app runs under a sub-path (IIS application)
   const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   const FOOTNOTES = { default: 'Standard (VAT + digital invoices)', fund: 'Funds (VAT + out-of-pocket + digital invoices)' };
   let CAT, dirty = false;
 
   async function load() {
-    CAT = await (await fetch('/api/catalog')).json();
+    CAT = await (await fetch(BASE + '/api/catalog')).json();
     render();
     setDirty(false);
     loadHistory();
@@ -174,7 +175,7 @@
   $('#save').onclick = async () => {
     const st = $('#status'); st.className = 'status'; st.textContent = 'Saving…';
     const open = new Set($$('.seg[open]').map(d => $('.s-name', d).value));
-    const r = await fetch('/api/admin/catalog', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(serialise()) });
+    const r = await fetch(BASE + '/api/admin/catalog', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(serialise()) });
     const j = await r.json();
     if (!r.ok) { st.className = 'status err'; st.textContent = j.error || 'Could not save'; return; }
     CAT = j; CAT.segments.forEach(s => s._open = open.has(s.name));
@@ -183,14 +184,14 @@
   $('#discard').onclick = () => { if (confirm('Discard all unsaved changes?')) load(); };
 
   async function loadHistory() {
-    const list = await (await fetch('/api/admin/history')).json();
+    const list = await (await fetch(BASE + '/api/admin/history')).json();
     const label = n => { const m = n.match(/(\d{4})(\d{2})(\d{2})-(\d{2})(\d{2})(\d{2})/); return m ? `${m[3]}/${m[2]}/${m[1]} ${m[4]}:${m[5]}` : n; };
     $('#history').innerHTML = `<option value="">${list.length ? 'choose…' : 'no saved versions yet'}</option>` + list.map(n => `<option value="${esc(n)}">${label(n)}</option>`).join('');
   }
   $('#history').addEventListener('change', async e => {
     const name = e.target.value; if (!name) return;
     if (!confirm(`Replace the current list of services with the version saved on ${e.target.selectedOptions[0].text}? (The current list is kept in the history.)`)) { e.target.value = ''; return; }
-    const r = await fetch('/api/admin/restore', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name }) });
+    const r = await fetch(BASE + '/api/admin/restore', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name }) });
     const j = await r.json();
     if (!r.ok) { alert(j.error); return; }
     CAT = j; render(); setDirty(false); loadHistory();

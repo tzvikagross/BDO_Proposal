@@ -187,3 +187,22 @@ def test_admin_api(temp_catalog):
     assert c.post("/api/admin/catalog", json={"units": [], "segments": []}).status_code == 400
     csv = c.get("/api/admin/export.csv").data.decode("utf-8-sig")
     assert csv.startswith("Segment,Section,Type,Description,Unit,Fee USD")
+
+
+# ---------------------------------------------------------------- hosting under a sub-path (IIS application)
+def test_links_under_sub_path(tmp_path, monkeypatch):
+    import app as appmod
+    import proposal.model as model
+    monkeypatch.setattr(appmod, "OUTPUT_DIR", tmp_path)
+    monkeypatch.setattr(model, "OUTPUT_DIR", tmp_path)
+    monkeypatch.setenv("PUBLIC_BASE_URL", "https://intranet.example/proposals/")
+    c = app.test_client()
+    env = "http://localhost/proposals/"
+    page = c.get("/", base_url=env).get_data(as_text=True)
+    assert 'window.APP_BASE = "/proposals"' in page and 'href="/proposals/admin"' in page
+    r = c.post("/api/proposals", json={"proposal": default_proposal("payroll"), "formats": ["html"]}, base_url=env)
+    j = r.get_json()
+    assert j["files"]["html"].startswith("/proposals/proposals/")
+    assert j["files"]["online"] == f"https://intranet.example/proposals/p/{j['id']}"
+    html = (tmp_path / j["id"]).glob("*.html").__next__().read_text(encoding="utf-8")
+    assert f'"https://intranet.example/proposals/api/proposals/{j["id"]}/sign"' in html

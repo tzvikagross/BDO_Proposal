@@ -25,6 +25,21 @@ python app.py                # open http://localhost:5000
 
 PDF export needs [LibreOffice](https://www.libreoffice.org/). If `soffice` isn't on your PATH, set `SOFFICE_PATH`. To let clients sign from the HTML file, the app has to be reachable by them. Deploy it and set `PUBLIC_BASE_URL` (for example `https://proposals.bdo.co.il`) so the generated files point to the right signing URL.
 
+## Running on IIS (Windows server)
+IIS runs the Python app for you, using Microsoft's HttpPlatformHandler module. Opening the site, or an application such as `https://server/proposals/`, shows the wizard. A setup script installs everything:
+
+```bash
+powershell -ExecutionPolicy Bypass -File .\deploy\iis\setup-iis.ps1 -PublicBaseUrl "https://intranet.bdo.co.il/proposals"
+```
+
+See **[deploy/iis/README.md](deploy/iis/README.md)** for the prerequisites, HTTPS, access control, updating and troubleshooting. To run the production server on any other system:
+
+```bash
+python serve.py
+```
+
+It reads `PORT`, `URL_PREFIX` (e.g. `/proposals`), `PUBLIC_BASE_URL` and `BEHIND_PROXY`.
+
 ## The wizard
 1. **Client details:** company, contact person (salutation and name), opportunity number, date, **currency** (ILS, USD, EUR or GBP), client type (*Accounting*, *Payroll only*, *Fund Admin*), cover title and optional scope of operations. Each client type has a default currency (USD; ILS for Fund Admin), and you can change it.
 2. **Engagement Team:** shows every bio in `assets/team` with photo, title and the full bio text. Tick the people to include; a proposal can have any number of bios, and they appear in the order shown. Bios marked `"default": true` (Tzvika Gross) start ticked but can be unticked. **+ Add a bio** uploads a new bio slide.
@@ -80,6 +95,8 @@ Terms & conditions in the **PPTX** come straight from template slide 4. If you e
 ## Project layout
 ```
 app.py                  Flask app (wizard, generation API, online proposal, signing endpoint)
+serve.py                production server (waitress) – started by IIS
+deploy/iis/             IIS: setup-iis.ps1, web.config.template, README.md
 proposal/model.py       config loading + normalising wizard input
 proposal/pptx_gen.py    template-based PPTX generation
 proposal/catalog.py     service catalog: load, validate, save with history

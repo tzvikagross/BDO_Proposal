@@ -1,7 +1,8 @@
 """BDO Proposal Generator – web app.
 
     pip install -r requirements.txt
-    python app.py            # http://localhost:5000
+    python app.py            # development server, http://localhost:5000
+    python serve.py          # production server (waitress) – used by IIS, see deploy/iis
 """
 from __future__ import annotations
 
@@ -9,7 +10,7 @@ import json
 import os
 from pathlib import Path
 
-from flask import Flask, Response, abort, jsonify, render_template, request, send_from_directory
+from flask import Flask, Response, abort, jsonify, render_template, request, send_from_directory, url_for
 
 from proposal.bios import BIO_DIR, add_bio_from_upload, list_bios
 from proposal import catalog as svc_catalog
@@ -20,11 +21,28 @@ from proposal.pptx_gen import generate_pptx
 from proposal.sign import create_signed_acceptance
 
 app = Flask(__name__, template_folder=str(ROOT / "templates"), static_folder=str(ROOT / "static"))
-app.config["MAX_CONTENT_LENGTH"] = 5 * 1024 * 1024
+app.config["MAX_CONTENT_LENGTH"] = 25 * 1024 * 1024   # bio slides can be a few MB
+
+if os.environ.get("BEHIND_PROXY"):
+    # IIS / reverse proxy in front: trust its X-Forwarded-* headers for the client IP, scheme and host
+    from werkzeug.middleware.proxy_fix import ProxyFix
+    app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1)
 
 
-def base_url() -> str:
-    return (os.environ.get("PUBLIC_BASE_URL") or request.host_url).rstrip("/")
+def abs_url(endpoint: str, **values) -> str:
+    """Absolute URL for links that leave the app (online proposal, signing endpoint).
+    Uses PUBLIC_BASE_URL (e.g. https://server/proposals) when set."""
+    public = os.environ.get("PUBLIC_BASE_URL", "").rstrip("/")
+    if public:
+        path = url_for(endpoint, **values)[len(request.script_root):]
+        return public + path
+    return url_for(endpoint, _external=True, **values)
+
+
+@app.context_processor
+def inject_base():
+    # the app may live under a sub-path (IIS application, e.g. /proposals); scripts prefix API calls with BASE
+    return {"BASE": request.script_root}
 
 
 def proposal_dir(pid: str) -> Path:
@@ -159,11 +177,11 @@ def api_create():
             except Exception as e:  # LibreOffice missing / failed
                 errors["pdf"] = str(e)
     if "html" in formats:
-        sign_url = f"{base_url()}/api/proposals/{p['id']}/sign"
+        sign_url = abs_url("api_sign", pid=p["id"])
         files["html"] = generate_html(p, d / f"{stem}.html", sign_url).name
-    links = {k: f"/proposals/{p['id']}/files/{v}" for k, v in files.items()}
+    links = {k: url_for("download", pid=p["id"], name=v) for k, v in files.items()}
     if "html" in formats:
-        links["online"] = f"{base_url()}/p/{p['id']}"
+        links["online"] = abs_url("online", pid=p["id"])
     return jsonify({"id": p["id"], "files": links, "errors": errors})
 
 
@@ -175,7 +193,7 @@ def download(pid, name):
 @app.get("/p/<pid>")
 def online(pid):
     p = load_proposal(pid)
-    return Response(render_html(p, f"{base_url()}/api/proposals/{pid}/sign"), mimetype="text/html")
+    return Response(render_html(p, abs_url("api_sign", pid=pid)), mimetype="text/html")
 
 
 @app.route("/api/proposals/<pid>/sign", methods=["POST", "OPTIONS"])
@@ -190,7 +208,7 @@ def api_sign(pid):
         return "Name and signature are required", 400
     if len(signer["signature"]) > 2_000_000:
         return "Signature image too large", 400
-    ip = request.headers.get("X-Forwarded-For", request.remote_addr or "").split(",")[0].strip()
+    ip = request.remote_addr or ""
     pdf = create_signed_acceptance(p, signer, ip=ip, user_agent=request.headers.get("User-Agent", ""))
     out = proposal_dir(pid) / "signed"
     out.mkdir(exist_ok=True)
@@ -207,7 +225,8 @@ def list_proposals():
         p = json.loads(d.read_text(encoding="utf-8"))
         signed = sorted((d.parent / "signed").glob("*.pdf")) if (d.parent / "signed").exists() else []
         rows.append({"id": p["id"], "company": p["client"]["company"], "title": p["client"]["title"],
-                     "date": p["client"]["date"], "signed": [f"/proposals/{p['id']}/files/signed/{f.name}" for f in signed]})
+                     "date": p["client"]["date"], "online": url_for("online", pid=p["id"]),
+                     "signed": [url_for("download", pid=p["id"], name=f"signed/{f.name}") for f in signed]})
     return jsonify(rows)
 
 

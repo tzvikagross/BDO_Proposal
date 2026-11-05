@@ -10,7 +10,7 @@
 <body>
 <header class="top">
   <div class="bar"><span class="brand">BDO</span><span>Proposal Generator · <b>Admin</b></span>
-    <a href="/" class="hist">← Back to the proposal wizard</a></div>
+    <a href="{{ url_for('wizard') }}" class="hist">← Back to the proposal wizard</a></div>
   <div class="savebar">
     <span id="status" class="status">Loading…</span>
     <button class="btn2" id="discard" disabled>Discard changes</button>
@@ -23,8 +23,8 @@
   <p class="hint">This is the list of services the wizard offers. Each <b>segment</b> becomes a separate fee table in the proposal. For every service, set a default fee in each currency and choose the fee unit. Changes are saved to <code>assets/services/services.json</code>; each save keeps the previous version under <code>assets/services/history</code>.</p>
 
   <div class="admin-tools">
-    <a class="small-btn" href="/api/admin/export.csv">Export CSV</a>
-    <a class="small-btn" href="/api/catalog" download="services.json">Download JSON</a>
+    <a class="small-btn" href="{{ url_for('api_admin_csv') }}">Export CSV</a>
+    <a class="small-btn" href="{{ url_for('api_catalog') }}" download="services.json">Download JSON</a>
     <label class="small-btn hist-pick">Restore a previous version <select id="history"><option value="">—</option></select></label>
   </div>
 
@@ -41,6 +41,7 @@
   <button class="btn2 add-seg" id="addSegment" type="button">+ Add segment</button>
 </main>
 <datalist id="sections"></datalist>
+<script>window.APP_BASE = {{ BASE|tojson }};</script>
 <script src="{{ url_for('static', filename='admin.js') }}"></script>
 </body>
 </html>

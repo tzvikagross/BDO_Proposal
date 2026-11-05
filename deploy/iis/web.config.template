@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  IIS configuration for the BDO Proposal Generator.
+  setup-iis.ps1 fills in the {{...}} values and writes this file as web.config in the app folder.
+
+  IIS hands every request to HttpPlatformHandler, which starts serve.py (the Python app)
+  and forwards the request to it. So browsing to the site or application opens the wizard.
+-->
+<configuration>
+  <system.webServer>
+    <handlers>
+      <add name="BDOProposalPython" path="*" verb="*" modules="httpPlatformHandler" resourceType="Unspecified" requireAccess="Script" />
+    </handlers>
+
+    <httpPlatform processPath="{{PYTHON}}"
+                  arguments="&quot;{{APP_DIR}}\serve.py&quot;"
+                  startupTimeLimit="120"
+                  startupRetryCount="3"
+                  requestTimeout="00:10:00"
+                  processesPerApplication="1"
+                  stdoutLogEnabled="true"
+                  stdoutLogFile="{{APP_DIR}}\logs\python">
+      <environmentVariables>
+        <!-- sub-path of the IIS application, e.g. /proposals (empty when the app is a whole site) -->
+        <environmentVariable name="URL_PREFIX" value="{{URL_PREFIX}}" />
+        <!-- public address put in the links sent to clients (online proposal + signing) -->
+        <environmentVariable name="PUBLIC_BASE_URL" value="{{PUBLIC_BASE_URL}}" />
+        <environmentVariable name="BEHIND_PROXY" value="1" />
+        <!-- LibreOffice, for PDF output -->
+        <environmentVariable name="SOFFICE_PATH" value="{{SOFFICE_PATH}}" />
+        <!-- password of data\signing.p12 (BDO's signing certificate), if you install one -->
+        <environmentVariable name="BDO_SIGNING_P12_PASSWORD" value="{{P12_PASSWORD}}" />
+        <environmentVariable name="PYTHONUNBUFFERED" value="1" />
+        <environmentVariable name="PYTHONIOENCODING" value="utf-8" />
+      </environmentVariables>
+    </httpPlatform>
+
+    <security>
+      <requestFiltering>
+        <!-- bio slides / proposals can be a few MB -->
+        <requestLimits maxAllowedContentLength="31457280" />
+        <!-- never expose these folders, even if the handler is missing -->
+        <hiddenSegments>
+          <add segment=".venv" />
+          <add segment=".git" />
+          <add segment="data" />
+          <add segment="config" />
+          <add segment="output" />
+          <add segment="logs" />
+          <add segment="tests" />
+          <add segment="deploy" />
+        </hiddenSegments>
+      </requestFiltering>
+    </security>
+  </system.webServer>
+</configuration>

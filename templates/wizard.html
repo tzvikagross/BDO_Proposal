@@ -9,7 +9,7 @@
 <body>
 <header class="top">
   <div class="bar"><span class="brand">BDO</span><span>Proposal Generator</span>
-    <a href="#" id="historyLink" class="hist">Previous proposals</a><a href="/admin" class="hist admin-link">Admin</a></div>
+    <a href="#" id="historyLink" class="hist">Previous proposals</a><a href="{{ url_for('admin') }}" class="hist admin-link">Admin</a></div>
   <ol class="steps" id="steps">
     <li data-step="1" class="on">1. Client details</li>
     <li data-step="2">2. Engagement Team</li>
@@ -62,7 +62,7 @@
 <section class="step" id="step-3">
   <h1>Services &amp; fees</h1>
   <div class="svc-bar">
-    <p class="hint">The segments for the selected client type are switched on, with the default fee for each service in the chosen currency. Tick or untick services, change any fee, pick the fee unit, or add your own lines. Each segment becomes a separate table (PPTX) and a separate sub-section in the HTML proposal. To change the default list of services, use <a href="/admin">Admin</a>.</p>
+    <p class="hint">The segments for the selected client type are switched on, with the default fee for each service in the chosen currency. Tick or untick services, change any fee, pick the fee unit, or add your own lines. Each segment becomes a separate table (PPTX) and a separate sub-section in the HTML proposal. To change the default list of services, use <a href="{{ url_for('admin') }}">Admin</a>.</p>
     <label class="curpick">Currency<select class="currency" id="currency3"></select></label>
   </div>
   <div id="groups"></div>
@@ -90,6 +90,7 @@
   <div class="nav"><button class="btn2" data-next="1">← Back to wizard</button><span></span></div>
 </section>
 </main>
+<script>window.APP_BASE = {{ BASE|tojson }};</script>
 <script src="{{ url_for('static', filename='wizard.js') }}"></script>
 </body>
 </html>
