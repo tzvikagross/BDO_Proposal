@@ -241,4 +241,11 @@ def import_bio_slide(prs, bio_id: str):
                 if attr.startswith(f"{{{R_NS}}}") and val in rid_map:
                     node.set(attr, rid_map[val])
         tree.append(el)
+    # the bio slide title is "ENGAGEMENT TEAM" (older bio slides say "OUR TEAM LEADERS")
+    for sh in new.shapes:
+        if sh.has_text_frame and sh.text_frame.text.strip().upper() == "OUR TEAM LEADERS":
+            runs = sh.text_frame.paragraphs[0].runs
+            runs[0].text = "ENGAGEMENT TEAM"
+            for r in runs[1:]:
+                r.text = ""
     return new

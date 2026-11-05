@@ -82,7 +82,7 @@ def test_api_flow(tmp_path, monkeypatch):
 def _team_names(pptx_path):
     prs = Presentation(str(pptx_path))
     return [s for s in prs.slides
-            if any(sh.has_text_frame and sh.text_frame.text.strip() == "OUR TEAM LEADERS" for sh in s.shapes)]
+            if any(sh.has_text_frame and sh.text_frame.text.strip() == "ENGAGEMENT TEAM" for sh in s.shapes)]
 
 
 def test_default_bio_is_tzvika_only():
