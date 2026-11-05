@@ -75,7 +75,7 @@ def default_proposal(client_type: str = "accounting") -> dict:
             "title": ct["proposal_title"],
             "date": dt.date.today().isoformat(),
         },
-        "team": ct["team"],
+        "team": None,  # None = the default bios
         "scope": {},
         "groups": groups,
     }
@@ -161,10 +161,11 @@ def normalise(req: dict) -> dict:
     for s in sections:
         s["footnote_lines"] = st["footnotes"].get(s["footnotes"], st["footnotes"]["default"])
 
-    team_ids = [t for t in (req.get("team") or []) if any(m["id"] == t for m in st["team"])]
-    if not team_ids:
-        team_ids = cat["client_types"][ctype]["team"]
-    team = [m for tid in team_ids for m in st["team"] if m["id"] == tid]
+    from .bios import default_bio_ids, get_bios
+    team_ids = req.get("team")
+    if team_ids is None:          # not specified -> pre-selected bios; [] -> no bios
+        team_ids = default_bio_ids()
+    team = get_bios(team_ids)
 
     scope = {k: str(v).strip() for k, v in (req.get("scope") or {}).items() if str(v or "").strip()}
     scope_rows = [{"label": f["label"], "value": scope[f["id"]]} for f in st["scope_fields"] if f["id"] in scope]

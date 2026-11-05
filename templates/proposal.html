@@ -107,7 +107,7 @@ footer{border-top:1px solid var(--line);color:var(--muted);font-size:12px;paddin
     <button role="tab" data-tab="intro" aria-selected="true">Introduction</button>
     <button role="tab" data-tab="terms">Terms &amp; Conditions</button>
     <button role="tab" data-tab="fees">Proposed Services &amp; Fees</button>
-    <button role="tab" data-tab="team">Engagement Team</button>
+    {% if p.team %}<button role="tab" data-tab="team">Engagement Team</button>{% endif %}
     <button role="tab" data-tab="services">Our Outsourcing Services</button>
     <button role="tab" data-tab="about">About BDO Israel</button>
     <button role="tab" data-tab="sign" class="sign">Accept &amp; Sign</button>
@@ -189,6 +189,7 @@ footer{border-top:1px solid var(--line);color:var(--muted);font-size:12px;paddin
   {% endfor %}
 </section>
 
+{% if p.team %}
 <section class="tab" id="tab-team">
   <h1>Our Team Leaders</h1>
   <div class="team">
@@ -207,6 +208,7 @@ footer{border-top:1px solid var(--line);color:var(--muted);font-size:12px;paddin
   {% endfor %}
   </div>
 </section>
+{% endif %}
 
 <section class="tab" id="tab-services">
   <h1>Services Provided by Our Outsourcing Team</h1>

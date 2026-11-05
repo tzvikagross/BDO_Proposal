@@ -1,0 +1,14 @@
+{
+  "name": "Tzippora Kahana",
+  "credentials": "C.P.A (Israel)",
+  "title": "Director of Finance",
+  "focus": "Technology & Hi-Tech",
+  "phone": "+972 54-917-3944",
+  "email": "TzipporaC@bdo.co.il",
+  "role": "Director of Finance, serving technology companies and venture capital funds.",
+  "experience": [
+    "Over six years of experience at the firm, specializing in auditing companies and serving as a financial controller for technology companies and venture capital funds."
+  ],
+  "default": false,
+  "order": 2
+}

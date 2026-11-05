@@ -1,0 +1,16 @@
+{
+  "name": "Racheli Butito",
+  "credentials": "Tax Consultant (Isr.)",
+  "title": "Director, Head of Global Payroll Services",
+  "focus": "",
+  "phone": "+972 51-202-0148",
+  "email": "RacheliBu@bdo.co.il",
+  "role": "Director. Head of Global Payroll Services.",
+  "experience": [
+    "Racheli has over 15 years of experience providing payroll services to a wide range of clients, including public companies, private organizations, and non-profit organizations.",
+    "Her expertise includes payroll management and compliance, with a strong focus on ensuring adherence to labor laws and regulatory requirements, minimizing audit exposure, and preventing potential financial penalties and risks.",
+    "Racheli leads a team of payroll professionals and tax advisors, delivering a comprehensive range of services, including payroll processing for Israeli and international employees, payroll reporting and compliance, preparation of payroll reports, and professional guidance on employment and payroll-related matters."
+  ],
+  "default": false,
+  "order": 4
+}

@@ -7,15 +7,12 @@
     "phone": "054-5227841",
     "email": "TzvikaG@bdo.co.il"
   },
-
   "public_base_url": "http://localhost:5000",
-
   "signing": {
     "_comment": "PKCS#12 certificate used to digitally sign accepted proposals (PAdES). If the file is missing, a self-signed development certificate is generated in data/dev_signing.p12 — replace it with BDO's real certificate for production.",
     "p12_path": "data/signing.p12",
     "p12_password_env": "BDO_SIGNING_P12_PASSWORD"
   },
-
   "footnotes": {
     "default": [
       "*** Prices above do not include VAT as applicable by law",
@@ -27,101 +24,131 @@
       "*** Tax invoices will be sent via email as digital signed documents"
     ]
   },
-
   "letter": [
     "We would like to thank you for the opportunity to submit a proposal for outsourcing services to the company and we are delighted to present our proposal for the provision. We prepared our proposal based on the understanding of your needs from the discussion we had.",
     "In response to your stated business objectives, we are confident that you will benefit from having BDO Israel as your accountant. We believe that the following are key elements and benefits that are extremely important when choosing your accountants:",
-    ["High level of involvement by partners and senior members of the team;",
-     "Hand to hand service provided by the partner;",
-     "Significant depth and breadth of services offered;",
-     "Well planned service approach, no surprises and timely delivery;",
-     "Proven ability to serve clients of similar size and scope to the Company;",
-     "Responsiveness in addressing issues as they arise;",
-     "Reasonable fees for services being rendered."],
+    [
+      "High level of involvement by partners and senior members of the team;",
+      "Hand to hand service provided by the partner;",
+      "Significant depth and breadth of services offered;",
+      "Well planned service approach, no surprises and timely delivery;",
+      "Proven ability to serve clients of similar size and scope to the Company;",
+      "Responsiveness in addressing issues as they arise;",
+      "Reasonable fees for services being rendered."
+    ],
     "Our proposal aims to address these elements. Our combination of involved and accessible partners; relevant industry experience, strong professional resources and our flexible, non-bureaucratic organisation will provide you with responsive service to your needs. We believe that our organisation allows us to provide these services in a cost-effective manner. We are confident that BDO Israel can meet the Company’s needs and that we will exceed your expectations in our ability to provide well-coordinated professional services. All of us at BDO Israel are very enthusiastic about the possibility of providing service to the Company.",
     "We look forward to the opportunity to personally present our proposal and respond to any questions you may have.",
     "We confirm that BDO possesses all necessary knowledge, capabilities, qualifications and resources to deliver your requested services timely and with due quality."
   ],
-
   "terms": [
-    {"heading": "Limited Liability", "paragraphs": [
-      "To the fullest extent permitted by applicable law, BDO and its affiliates, shall not be liable whether under contract, tort (including negligence) or otherwise, to the Client or any third party for any indirect, special, incidental, punitive, exemplary, lost profits or consequential damages (including but not limited to, any loss or damage to business earnings, or goodwill and lost or damaged data or documentation), related to the provision of the services under this agreement.",
-      "Without limiting the generality of the foregoing and to the maximum extent legally permissible, BDO and its affiliates', total aggregate liability for all damages or losses whatsoever arising in connection with the provision of the services under this agreement, shall not exceed, in the aggregate, the total amounts actually paid to BDO or owed to BDO, for the services under this agreement, in the twelve (12) months period preceding the event giving rise to such claim, without regard to whether such claim is based in contract, tort (including negligence), indemnification, or otherwise.",
-      "The Client will indemnify and hold BDO and its employees, agents, contractors, affiliates, parents, subsidiaries, officers, directors and assignees, harmless from and against any and all liability, claim, costs, damages, expense, losses, fines, or any other payment suffered by BDO as a result of the provision of the services under this agreement, unless such claim was the result of BDO’s fraud or willful misconduct."
-    ]},
-    {"heading": "Non Disclosure", "paragraphs": [
-      "BDO undertakes to maintain the confidentiality of the business and financial data that will be passed on by the Company and not publicly known."
-    ]},
-    {"heading": "Privacy", "paragraphs": [
-      "BDO undertakes to protect personal data (of your employees and any other personal data provided to us for the provision of our services) and shall act in accordance with the privacy policy published on [Privacy Policy] as updated from time to time."
-    ]},
-    {"heading": "Termination", "paragraphs": [
-      "Each party can terminate this agreement with a 90 days prior notice, without any cause."
-    ]},
-    {"heading": "No Solicitation", "paragraphs": [
-      "The company is obligated not to hire any BDO employees as long as the accounting services are provided, and for an additional period of 24 months, after the termination of this agreement. Should the company choose to hire a BDO employee within this period of time, the company will pay a placement fee of $25,000."
-    ]},
-    {"heading": "Miscellaneous", "paragraphs": [
-      "Fees above do not include VAT as required by law.",
-      "The suggested fee are based on an estimation of the working hours required for the provision of services. Should the actual work required vary, in a material way, from the expected investment of hours, the fee will be adjusted accordingly.",
-      "If any dispute, controversy or claim arises in connection with the performance or breach of this Agreement, either party may, upon written notice to the other party, request facilitated negotiations to take place in Israel. Such negotiations shall be assisted by a neutral facilitator acceptable to both parties and shall require the best efforts of the parties to discuss with each other in good faith their respective positions and, respecting their different interests, to finally resolve such dispute."
-    ]}
+    {
+      "heading": "Limited Liability",
+      "paragraphs": [
+        "To the fullest extent permitted by applicable law, BDO and its affiliates, shall not be liable whether under contract, tort (including negligence) or otherwise, to the Client or any third party for any indirect, special, incidental, punitive, exemplary, lost profits or consequential damages (including but not limited to, any loss or damage to business earnings, or goodwill and lost or damaged data or documentation), related to the provision of the services under this agreement.",
+        "Without limiting the generality of the foregoing and to the maximum extent legally permissible, BDO and its affiliates', total aggregate liability for all damages or losses whatsoever arising in connection with the provision of the services under this agreement, shall not exceed, in the aggregate, the total amounts actually paid to BDO or owed to BDO, for the services under this agreement, in the twelve (12) months period preceding the event giving rise to such claim, without regard to whether such claim is based in contract, tort (including negligence), indemnification, or otherwise.",
+        "The Client will indemnify and hold BDO and its employees, agents, contractors, affiliates, parents, subsidiaries, officers, directors and assignees, harmless from and against any and all liability, claim, costs, damages, expense, losses, fines, or any other payment suffered by BDO as a result of the provision of the services under this agreement, unless such claim was the result of BDO’s fraud or willful misconduct."
+      ]
+    },
+    {
+      "heading": "Non Disclosure",
+      "paragraphs": [
+        "BDO undertakes to maintain the confidentiality of the business and financial data that will be passed on by the Company and not publicly known."
+      ]
+    },
+    {
+      "heading": "Privacy",
+      "paragraphs": [
+        "BDO undertakes to protect personal data (of your employees and any other personal data provided to us for the provision of our services) and shall act in accordance with the privacy policy published on [Privacy Policy] as updated from time to time."
+      ]
+    },
+    {
+      "heading": "Termination",
+      "paragraphs": [
+        "Each party can terminate this agreement with a 90 days prior notice, without any cause."
+      ]
+    },
+    {
+      "heading": "No Solicitation",
+      "paragraphs": [
+        "The company is obligated not to hire any BDO employees as long as the accounting services are provided, and for an additional period of 24 months, after the termination of this agreement. Should the company choose to hire a BDO employee within this period of time, the company will pay a placement fee of $25,000."
+      ]
+    },
+    {
+      "heading": "Miscellaneous",
+      "paragraphs": [
+        "Fees above do not include VAT as required by law.",
+        "The suggested fee are based on an estimation of the working hours required for the provision of services. Should the actual work required vary, in a material way, from the expected investment of hours, the fee will be adjusted accordingly.",
+        "If any dispute, controversy or claim arises in connection with the performance or breach of this Agreement, either party may, upon written notice to the other party, request facilitated negotiations to take place in Israel. Such negotiations shall be assisted by a neutral facilitator acceptable to both parties and shall require the best efforts of the parties to discuss with each other in good faith their respective positions and, respecting their different interests, to finally resolve such dispute."
+      ]
+    }
   ],
-
   "scope_fields": [
-    {"id": "employees", "label": "Number of employees"},
-    {"id": "clients", "label": "Number of clients"},
-    {"id": "bank_accounts", "label": "Number of bank accounts"},
-    {"id": "credit_cards", "label": "Number of credit cards"},
-    {"id": "travels", "label": "Number of travels abroad"},
-    {"id": "revenue", "label": "Monthly expected revenue"},
-    {"id": "sales_invoices", "label": "Number of expected sales invoices"},
-    {"id": "ap_invoices", "label": "Number of expected AP invoices"}
+    {
+      "id": "employees",
+      "label": "Number of employees"
+    },
+    {
+      "id": "clients",
+      "label": "Number of clients"
+    },
+    {
+      "id": "bank_accounts",
+      "label": "Number of bank accounts"
+    },
+    {
+      "id": "credit_cards",
+      "label": "Number of credit cards"
+    },
+    {
+      "id": "travels",
+      "label": "Number of travels abroad"
+    },
+    {
+      "id": "revenue",
+      "label": "Monthly expected revenue"
+    },
+    {
+      "id": "sales_invoices",
+      "label": "Number of expected sales invoices"
+    },
+    {
+      "id": "ap_invoices",
+      "label": "Number of expected AP invoices"
+    }
   ],
-
-  "team": [
-    {"id": "tzvika", "template_slide": 13, "name": "Tzvika Gross", "credentials": "C.P.A (Israel)", "title": "Partner, Head of Global Outsourcing Services",
-     "focus": "Technology & Life Sciences | Fintech and Blockchain", "phone": "+972 54-522-7841", "email": "TzvikaG@bdo.co.il",
-     "role": "Tzvika Gross is leading the BSO services in Israel, for both global and domestic companies. The BSO group provides a variety of outsourcing services to the rapid growing tech eco-system in Israel, as well as to global companies operating in Israel, admin and accounting services to venture capital and PE funds.",
-     "experience": [
-       "Tzvika Gross is a certified public accountant in Israel, with a bachelor's degree in computer science, and an M.BA from the Hebrew University in Finance, Banking and Information systems.",
-       "Tzvika has been with BDO since 2012 developing the outsourcing practice of BDO Israel. His knowledge and broad experience as both auditor and advisor, as well as a CTO to several tech and telecom companies, were significant in the transformation of the BSO services in Israel into a technology and automation driven processes, with first in line professional standards, and cutting-edge quality control measures.",
-       "Tzvika has developed the Global Outsourcing Services group to provide a holistic solution to global corporations operating in Israel, for all the relevant aspects, e.g. tax, compliance, secretarial, and legal.",
-       "Tzvika established the Fund Accounting and Admin Services group, as part of the BSO provisioning, utilizing unique know-how and practices, while developing and deploying proprietary BDO information systems to enhance Investor Relations services for the Fund Admin group.",
-       "Tzvika's combined experience in both accounting and technology, positioned him as the leading partner for the Blockchain and Crypto task force of BDO Israel."
-     ]},
-    {"id": "tzippora", "template_slide": 14, "name": "Tzippora Kahana", "credentials": "C.P.A (Israel)", "title": "Director of Finance",
-     "focus": "Technology & Hi-Tech", "phone": "+972 54-917-3944", "email": "TzipporaC@bdo.co.il",
-     "role": "Director of Finance, serving technology companies and venture capital funds.",
-     "experience": [
-       "Over six years of experience at the firm, specializing in auditing companies and serving as a financial controller for technology companies and venture capital funds."
-     ]},
-    {"id": "lea", "template_slide": 15, "name": "Lea Feinstein", "credentials": "C.P.A (Israel)", "title": "Director, Head of Global Accounting and Outsourcing Services for global corporations",
-     "focus": "", "phone": "+972 54-884-0455", "email": "LeaF@bdo.co.il",
-     "role": "Director. Head of Global Accounting and Outsourcing Services for global corporations.",
-     "experience": [
-       "Lea Feinstein, CPA, is a Director and Head of Global Outsourcing Services at BDO Israel, leading the provision of accounting, bookkeeping, and financial outsourcing services to international corporations, multinational groups, and Israeli technology companies and startups.",
-       "Lea Feinstein has over 10 years of professional experience in accounting, auditing, and financial management, with extensive expertise in managing end-to-end accounting and financial reporting processes, Israeli tax and regulatory compliance, and indirect taxation.",
-       "Lea Feinstein has significant experience working with international clients, supporting their financial operations in Israel, and coordinating with global finance teams to ensure accurate, efficient, and compliant financial reporting."
-     ]},
-    {"id": "racheli", "template_slide": 16, "name": "Racheli Butito", "credentials": "Tax Consultant (Isr.)", "title": "Director, Head of Global Payroll Services",
-     "focus": "", "phone": "+972 51-202-0148", "email": "RacheliBu@bdo.co.il",
-     "role": "Director. Head of Global Payroll Services.",
-     "experience": [
-       "Racheli has over 15 years of experience providing payroll services to a wide range of clients, including public companies, private organizations, and non-profit organizations.",
-       "Her expertise includes payroll management and compliance, with a strong focus on ensuring adherence to labor laws and regulatory requirements, minimizing audit exposure, and preventing potential financial penalties and risks.",
-       "Racheli leads a team of payroll professionals and tax advisors, delivering a comprehensive range of services, including payroll processing for Israeli and international employees, payroll reporting and compliance, preparation of payroll reports, and professional guidance on employment and payroll-related matters."
-     ]}
-  ],
-
   "outsourcing_services": [
-    {"title": "Accounting Services", "text": "We provide comprehensive accounting services for small and medium-sized businesses, corporations, and partnerships. Our services include maintaining accounting records, managing financial transactions, processing payments to authorities, and supporting day-to-day financial operations. We leverage digital workflows and advanced technologies to deliver accurate, efficient, and reliable services, supported by dedicated professionals."},
-    {"title": "Payroll Bureau Services", "text": "We provide end-to-end payroll processing services for small and medium-sized businesses, using leading payroll software such as Malam, Michpal, Oketz, and Shikululit. Each client is supported by a dedicated payroll professional responsible for accurate salary calculations, payroll processing, and ongoing support in accordance with applicable requirements."},
-    {"title": "Placement and Outsourcing Services", "text": "We provide experienced finance and accounting professionals who work directly at clients' premises, supported by BDO's multidisciplinary expertise. Our services include bookkeepers, controllers, financial managers, payroll accountants, and CFO-level professionals. Flexible engagement models range from part-time support to full-time placements, including temporary replacements and long-term assignments."},
-    {"title": "Financial Report Analysis Services", "text": "We leverage advanced BI and AI technologies to transform financial and operational data into actionable management insights. Our solutions enable customized reporting, detailed business performance analysis, and flexible data segmentation across business units and products. Reports are accessible to end-users, with data updates available every 15 minutes."},
-    {"title": "HR Administration Services", "text": "We provide comprehensive HR administration services, supporting organizations throughout the employee lifecycle, from onboarding to offboarding. Our services include payroll data collection and validation, coordination with payroll providers, employee support, and pension and benefits administration. We streamline administrative processes and enable HR teams to focus on their core priorities."},
-    {"title": "Fund Administration Services", "text": "We provide end-to-end fund administration services for investment funds, covering fund accounting, NAV calculations, financial reporting, and investor administration. Our services include capital calls and distributions, investor reporting, carried interest calculations, management company support, and regulatory compliance, including KYC, AML, FATCA, and CRS requirements."}
+    {
+      "title": "Accounting Services",
+      "text": "We provide comprehensive accounting services for small and medium-sized businesses, corporations, and partnerships. Our services include maintaining accounting records, managing financial transactions, processing payments to authorities, and supporting day-to-day financial operations. We leverage digital workflows and advanced technologies to deliver accurate, efficient, and reliable services, supported by dedicated professionals."
+    },
+    {
+      "title": "Payroll Bureau Services",
+      "text": "We provide end-to-end payroll processing services for small and medium-sized businesses, using leading payroll software such as Malam, Michpal, Oketz, and Shikululit. Each client is supported by a dedicated payroll professional responsible for accurate salary calculations, payroll processing, and ongoing support in accordance with applicable requirements."
+    },
+    {
+      "title": "Placement and Outsourcing Services",
+      "text": "We provide experienced finance and accounting professionals who work directly at clients' premises, supported by BDO's multidisciplinary expertise. Our services include bookkeepers, controllers, financial managers, payroll accountants, and CFO-level professionals. Flexible engagement models range from part-time support to full-time placements, including temporary replacements and long-term assignments."
+    },
+    {
+      "title": "Financial Report Analysis Services",
+      "text": "We leverage advanced BI and AI technologies to transform financial and operational data into actionable management insights. Our solutions enable customized reporting, detailed business performance analysis, and flexible data segmentation across business units and products. Reports are accessible to end-users, with data updates available every 15 minutes."
+    },
+    {
+      "title": "HR Administration Services",
+      "text": "We provide comprehensive HR administration services, supporting organizations throughout the employee lifecycle, from onboarding to offboarding. Our services include payroll data collection and validation, coordination with payroll providers, employee support, and pension and benefits administration. We streamline administrative processes and enable HR teams to focus on their core priorities."
+    },
+    {
+      "title": "Fund Administration Services",
+      "text": "We provide end-to-end fund administration services for investment funds, covering fund accounting, NAV calculations, financial reporting, and investor administration. Our services include capital calls and distributions, investor reporting, carried interest calculations, management company support, and regulatory compliance, including KYC, AML, FATCA, and CRS requirements."
+    }
   ],
-
-  "about_slides": [18, 19, 20, 21, 22, 23, 24]
+  "about_slides": [
+    18,
+    19,
+    20,
+    21,
+    22,
+    23,
+    24
+  ]
 }

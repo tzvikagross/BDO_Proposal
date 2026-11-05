@@ -12,8 +12,9 @@
     <a href="#" id="historyLink" class="hist">Previous proposals</a></div>
   <ol class="steps" id="steps">
     <li data-step="1" class="on">1. Client details</li>
-    <li data-step="2">2. Services &amp; fees</li>
-    <li data-step="3">3. Generate</li>
+    <li data-step="2">2. Engagement Team</li>
+    <li data-step="3">3. Services &amp; fees</li>
+    <li data-step="4">4. Generate</li>
   </ol>
 </header>
 
@@ -34,27 +35,39 @@
   <div class="types" id="types"></div>
   <label class="wide">Proposal title (cover page)<input id="title"></label>
 
-  <h2>Engagement team</h2>
-  <div class="checks" id="team"></div>
-
   <details class="scope"><summary>Scope of operations <small>(optional – shown as its own slide / section)</small></summary>
     <div class="grid2" id="scope"></div>
   </details>
 
-  <div class="nav"><span></span><button class="btn" data-next="2">Next: services &amp; fees →</button></div>
+  <div class="nav"><span></span><button class="btn" data-next="2">Next: engagement team →</button></div>
 </section>
 
 <!-- STEP 2 -->
 <section class="step" id="step-2">
-  <h1>Services &amp; fees</h1>
-  <p class="hint">Service groups for the selected client type are switched on. Untick any service you don't want, edit fees/units/wording, or add your own lines. Each group becomes a separate table (PPTX) and a separate sub-section in the HTML proposal.</p>
-  <div id="groups"></div>
-  <details class="more"><summary>Other service groups</summary><div id="groupsMore"></div></details>
-  <div class="nav"><button class="btn2" data-next="1">← Back</button><button class="btn" data-next="3">Next: generate →</button></div>
+  <h1>Engagement Team</h1>
+  <p class="hint">Choose the bios to include in this proposal. Each selected bio is added as its own slide in the PPTX/PDF and as a profile in the HTML proposal, in the order shown. Bios live in <code>assets/team</code> – one slide per person.</p>
+  <div class="bio-tools">
+    <span id="bioCount"></span>
+    <button type="button" class="small-btn" id="bioAll">Select all</button>
+    <button type="button" class="small-btn" id="bioNone">Clear</button>
+    <label class="small-btn upload">+ Add a bio (PPTX slide)<input type="file" id="bioUpload" accept=".pptx" hidden></label>
+  </div>
+  <div class="bio-msg" id="bioMsg" role="status"></div>
+  <div class="bios" id="bios"></div>
+  <div class="nav"><button class="btn2" data-next="1">← Back</button><button class="btn" data-next="3">Next: services &amp; fees →</button></div>
 </section>
 
 <!-- STEP 3 -->
 <section class="step" id="step-3">
+  <h1>Services &amp; fees</h1>
+  <p class="hint">Service groups for the selected client type are switched on. Untick any service you don't want, edit fees/units/wording, or add your own lines. Each group becomes a separate table (PPTX) and a separate sub-section in the HTML proposal.</p>
+  <div id="groups"></div>
+  <details class="more"><summary>Other service groups</summary><div id="groupsMore"></div></details>
+  <div class="nav"><button class="btn2" data-next="2">← Back</button><button class="btn" data-next="4">Next: generate →</button></div>
+</section>
+
+<!-- STEP 4 -->
+<section class="step" id="step-4">
   <h1>Generate proposal</h1>
   <div class="summary" id="summary"></div>
   <h2>Output formats</h2>
@@ -63,7 +76,7 @@
     <label><input type="checkbox" name="fmt" value="pdf" checked> PDF</label>
     <label><input type="checkbox" name="fmt" value="html" checked> Interactive HTML (tabs + digital signing)</label>
   </div>
-  <div class="nav"><button class="btn2" data-next="2">← Back</button><button class="btn" id="generate">Generate</button></div>
+  <div class="nav"><button class="btn2" data-next="3">← Back</button><button class="btn" id="generate">Generate</button></div>
   <div id="result" class="result"></div>
 </section>
 

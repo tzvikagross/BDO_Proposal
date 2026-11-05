@@ -1,6 +1,7 @@
 import io
 import json
 import zipfile
+from pathlib import Path
 
 import pytest
 from pptx import Presentation
@@ -75,3 +76,40 @@ def test_api_flow(tmp_path, monkeypatch):
     assert r.status_code == 200 and r.data[:4] == b"%PDF"
     assert r.headers["Access-Control-Allow-Origin"] == "*"
     assert c.post("/api/proposals", json={"proposal": {"client": {}}}).status_code == 400
+
+
+# ---------------------------------------------------------------- engagement-team bios
+def _team_names(pptx_path):
+    prs = Presentation(str(pptx_path))
+    return [s for s in prs.slides
+            if any(sh.has_text_frame and sh.text_frame.text.strip() == "OUR TEAM LEADERS" for sh in s.shapes)]
+
+
+def test_default_bio_is_tzvika_only():
+    p = normalise(default_proposal("accounting"))
+    assert [m["id"] for m in p["team"]] == ["tzvika"]
+
+
+def test_selected_bios_in_order_and_none(tmp_path):
+    req = default_proposal("payroll")
+    req["team"] = ["racheli", "tzvika", "lea"]
+    out = generate_pptx(normalise(req), tmp_path / "a.pptx")
+    slides = _team_names(out)
+    texts = [" ".join(sh.text_frame.text for sh in s.shapes if sh.has_text_frame) for s in slides]
+    assert len(slides) == 3
+    assert "Racheli" in texts[0] and "Tzvika" in texts[1] and "Lea" in texts[2]
+
+    req["team"] = []
+    out = generate_pptx(normalise(req), tmp_path / "b.pptx")
+    assert _team_names(out) == []
+
+
+def test_upload_new_bio(tmp_path, monkeypatch):
+    import shutil
+    import proposal.bios as bios
+    monkeypatch.setattr(bios, "BIO_DIR", tmp_path)
+    src = Path(__file__).resolve().parent.parent / "assets" / "team" / "lea.pptx"
+    bio = bios.add_bio_from_upload(src.read_bytes(), "someone.pptx")
+    assert bio["name"] == "Lea Feinstein" and bio["has_photo"]
+    assert (tmp_path / f"{bio['id']}.pptx").exists() and (tmp_path / f"{bio['id']}.json").exists()
+    assert [b["id"] for b in bios.list_bios()] == [bio["id"]]

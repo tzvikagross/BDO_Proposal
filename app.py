@@ -11,6 +11,7 @@ from pathlib import Path
 
 from flask import Flask, Response, abort, jsonify, render_template, request, send_from_directory
 
+from proposal.bios import BIO_DIR, add_bio_from_upload, list_bios
 from proposal.html_gen import generate_html, render_html
 from proposal.model import OUTPUT_DIR, ROOT, catalog, normalise, safe_filename, settings
 from proposal.pdf_convert import pptx_to_pdf
@@ -59,9 +60,35 @@ def api_catalog():
     return jsonify({
         "client_types": catalog()["client_types"],
         "groups": catalog()["groups"],
-        "team": [{k: m[k] for k in ("id", "name", "title")} for m in st["team"]],
         "scope_fields": st["scope_fields"],
     })
+
+
+@app.get("/api/team")
+def api_team():
+    return jsonify(list_bios())
+
+
+@app.post("/api/team")
+def api_team_upload():
+    f = request.files.get("file")
+    if not f or not f.filename.lower().endswith(".pptx"):
+        return jsonify({"error": "Upload a .pptx file containing the bio slide"}), 400
+    try:
+        bio = add_bio_from_upload(f.read(), f.filename)
+    except Exception as e:
+        return jsonify({"error": f"Could not read the presentation: {e}"}), 400
+    return jsonify(bio)
+
+
+@app.get("/team/<bio_id>/<kind>")
+def team_file(bio_id, kind):
+    if not bio_id.replace("_", "").isalnum() or kind not in ("photo", "slide"):
+        abort(404)
+    name = f"{bio_id}.jpg" if kind == "photo" else f"{bio_id}.pptx"
+    if not (BIO_DIR / name).exists():
+        abort(404)
+    return send_from_directory(BIO_DIR, name, as_attachment=(kind == "slide"))
 
 
 @app.post("/api/proposals")

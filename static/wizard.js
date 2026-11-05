@@ -10,7 +10,7 @@
   function go(n) {
     $$('.step').forEach(s => s.classList.toggle('on', s.id === 'step-' + n));
     $$('#steps li').forEach(li => li.classList.toggle('on', li.dataset.step == n));
-    if (n == 3) renderSummary();
+    if (n == 4) renderSummary();
     window.scrollTo({ top: 0 });
   }
   $$('[data-next]').forEach(b => b.addEventListener('click', () => {
@@ -24,7 +24,6 @@
   $('#types').innerHTML = Object.entries(CAT.client_types).map(([id, t]) =>
     `<label class="type${id === clientType ? ' on' : ''}"><input type="radio" name="ctype" value="${id}"${id === clientType ? ' checked' : ''}>
       <b>${esc(t.label)}</b><small>${t.groups.length} service groups · ${esc(t.proposal_title)}</small></label>`).join('');
-  $('#team').innerHTML = CAT.team.map(m => `<label><input type="checkbox" name="team" value="${m.id}"> ${esc(m.name)} <small style="color:#6b7280">– ${esc(m.title)}</small></label>`).join('');
   $('#scope').innerHTML = CAT.scope_fields.map(f => `<label>${esc(f.label)}<input data-scope="${f.id}"></label>`).join('');
   $('#title').addEventListener('input', () => titleTouched = true);
   $$('input[name=ctype]').forEach(r => r.addEventListener('change', () => { clientType = r.value; applyType(); }));
@@ -33,7 +32,6 @@
     const t = CAT.client_types[clientType];
     $$('.type').forEach(l => l.classList.toggle('on', $('input', l).value === clientType));
     if (!titleTouched) $('#title').value = t.proposal_title;
-    $$('input[name=team]').forEach(c => c.checked = t.team.includes(c.value));
     buildGroups();
   }
 
@@ -117,7 +115,7 @@
     return {
       client: { company: $('#company').value, contact_name: $('#contact').value, salutation: $('#salutation').value,
                 opportunity: $('#opportunity').value, date: $('#date').value, client_type: clientType, title: $('#title').value },
-      team: $$('input[name=team]:checked').map(c => c.value),
+      team: $$('input[name=bio]:checked').map(c => c.value),
       scope, groups,
     };
   }
@@ -125,8 +123,10 @@
   function renderSummary() {
     const p = collect();
     const items = p.groups.reduce((n, g) => n + g.rows.filter(r => r.type === 'item' && r.include).length, 0);
+    const team = $$('input[name=bio]:checked').map(c => c.dataset.name);
     $('#summary').innerHTML = `<b>${esc(p.client.company)}</b> · ${esc(CAT.client_types[clientType].label)} · ${esc(p.client.title)}<br>
       Contact: ${esc((p.client.salutation + ' ' + p.client.contact_name).trim() || '—')} · Opportunity ${esc(p.client.opportunity || '000000')}<br>
+      Engagement team: ${team.length ? esc(team.join(', ')) : '<i>none selected</i>'}<br>
       ${p.groups.length} service groups, ${items} services:
       <ul>${p.groups.map(g => `<li>${esc(g.title)} <small>(${esc(g.section)}, ${g.currency})</small> – ${g.rows.filter(r => r.type === 'item' && r.include).length} services</li>`).join('')}</ul>`;
   }
@@ -164,5 +164,54 @@
     $$('#steps li').forEach(li => li.classList.remove('on'));
   });
 
+  // ---------- engagement team (bios)
+  function bioCard(b, checked) {
+    const exp = (b.experience || []).map(e => `<p>${esc(e)}</p>`).join('');
+    return `<div class="bio${checked ? ' on' : ''}">
+      <label class="bio-head">
+        <input type="checkbox" name="bio" value="${esc(b.id)}" data-name="${esc(b.name)}" ${checked ? 'checked' : ''}>
+        ${b.has_photo ? `<img src="/team/${esc(b.id)}/photo" alt="">` : '<span class="nophoto"></span>'}
+        <span><b>${esc(b.name)}</b>${b.default ? ' <em class="tag">default</em>' : ''}<br>
+          <small>${esc([b.credentials, b.title].filter(Boolean).join(' · '))}</small>
+          ${b.email ? `<br><small>${esc(b.email)}${b.phone ? ' · ' + esc(b.phone) : ''}</small>` : ''}</span>
+      </label>
+      <details><summary>Read bio</summary>
+        ${b.role ? `<h4>Current role at BDO</h4><p>${esc(b.role)}</p>` : ''}
+        ${exp ? `<h4>Relevant experience</h4>${exp}` : ''}
+        <p><a href="/team/${esc(b.id)}/slide">Download slide (PPTX)</a></p>
+      </details></div>`;
+  }
+  async function loadBios(selectId) {
+    const prev = new Set($$('input[name=bio]:checked').map(c => c.value));
+    const first = !$$('input[name=bio]').length;
+    const bios = await (await fetch('/api/team')).json();
+    $('#bios').innerHTML = bios.map(b => bioCard(b, first ? b.default : (prev.has(b.id) || b.id === selectId))).join('')
+      || '<p class="hint">No bios yet – add one with “Add a bio”.</p>';
+    countBios();
+  }
+  function countBios() {
+    const n = $$('input[name=bio]:checked').length;
+    $('#bioCount').textContent = `${n} of ${$$('input[name=bio]').length} selected`;
+    $$('.bio').forEach(el => el.classList.toggle('on', $('input', el).checked));
+  }
+  $('#bios').addEventListener('change', countBios);
+  $('#bioAll').onclick = () => { $$('input[name=bio]').forEach(c => c.checked = true); countBios(); };
+  $('#bioNone').onclick = () => { $$('input[name=bio]').forEach(c => c.checked = false); countBios(); };
+  $('#bioUpload').addEventListener('change', async e => {
+    const f = e.target.files[0]; if (!f) return;
+    const msg = $('#bioMsg'); msg.className = 'bio-msg'; msg.textContent = `Uploading ${f.name}…`;
+    const fd = new FormData(); fd.append('file', f);
+    try {
+      const r = await fetch('/api/team', { method: 'POST', body: fd });
+      const j = await r.json();
+      if (!r.ok) throw new Error(j.error || r.statusText);
+      await loadBios(j.id);
+      msg.className = 'bio-msg ok';
+      msg.textContent = `Added ${j.name}. Check the details below; to fine-tune the text edit assets/team/${j.id}.json.`;
+    } catch (err) { msg.className = 'bio-msg err'; msg.textContent = err.message; }
+    e.target.value = '';
+  });
+
+  await loadBios();
   applyType();
 })();

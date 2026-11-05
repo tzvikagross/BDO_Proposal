@@ -13,11 +13,6 @@
         "other_tax",
         "vat_rep",
         "hourly_rates"
-      ],
-      "team": [
-        "tzvika",
-        "lea",
-        "racheli"
       ]
     },
     "payroll": {
@@ -26,10 +21,6 @@
       "groups": [
         "payroll",
         "hourly_rates"
-      ],
-      "team": [
-        "tzvika",
-        "racheli"
       ]
     },
     "fund_admin": {
@@ -39,10 +30,6 @@
         "fund_services",
         "fund_compliance",
         "hourly_rates"
-      ],
-      "team": [
-        "tzvika",
-        "tzippora"
       ]
     }
   },

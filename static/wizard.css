@@ -60,6 +60,23 @@ details[open] summary{margin-bottom:14px}
 .result a.dl{display:inline-block;margin:8px 10px 0 0;padding:9px 16px;border-radius:8px;background:#fff;border:1px solid #9fd3b4;text-decoration:none;color:#11733a;font-weight:bold}
 .hist-table{width:100%;border-collapse:collapse;font-size:14px}
 .hist-table td,.hist-table th{padding:8px;border-bottom:1px solid var(--line);text-align:left}
+code{background:var(--panel);padding:1px 5px;border-radius:4px;font-size:13px}
+.bio-tools{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:6px 0 4px}
+.bio-tools #bioCount{font-size:13px;color:var(--muted);margin-right:auto}
+.small-btn.upload{display:inline-block;flex-direction:row;font-weight:normal;color:var(--red);border-color:var(--red)}
+.bio-msg{font-size:13px;min-height:18px;margin:4px 0}.bio-msg.ok{color:#11733a}.bio-msg.err{color:var(--red-dk)}
+.bios{display:grid;align-items:start;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px}
+.bio{border:2px solid var(--line);border-radius:10px;padding:12px 14px;background:#fff}
+.bio.on{border-color:var(--red);background:#fff8f9}
+.bio-head{flex-direction:row;align-items:center;gap:12px;font-weight:normal;cursor:pointer}
+.bio-head input{width:18px;height:18px;flex:0 0 auto}
+.bio-head img,.bio-head .nophoto{width:64px;height:80px;object-fit:cover;object-position:top;border-radius:6px;background:#e5e7eb;flex:0 0 auto}
+.bio-head b{font-size:15px}.bio-head small{color:var(--muted)}
+.tag{font-style:normal;font-size:11px;background:var(--red);color:#fff;border-radius:999px;padding:1px 7px;vertical-align:middle}
+.bio details{margin-top:10px;border:0;padding:0}
+.bio details summary{font-size:13px;color:var(--slate);font-weight:normal}
+.bio details h4{margin:8px 0 2px;font-size:12px;text-transform:uppercase;color:var(--red)}
+.bio details p{font-size:13px;margin:0 0 6px}
 @media (max-width:760px){
   .grid2,.types{grid-template-columns:1fr}
   .row,.rowhead{grid-template-columns:28px 1fr 28px}

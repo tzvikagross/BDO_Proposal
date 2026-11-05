@@ -1,12 +1,12 @@
 """Generate a proposal PPTX from the BDO template.
 
-The template is kept intact (branding, team, about-BDO slides); only these parts change:
+The template is kept intact (branding, about-BDO slides); only these parts change:
   * slide 1  – company name, proposal title, date
   * slide 2  – opportunity number, contact name, company
   * slide 5  – scope of operations table (removed when no scope was entered)
   * slides 6-12 – replaced with fee slides generated from the selected services,
     built by cloning the template's fee slide / table so the look is identical
-  * slides 13-16 – team members that were not selected are removed
+  * slides 13-16 – replaced by the selected bio slides from assets/team/<id>.pptx
 """
 from __future__ import annotations
 
@@ -16,6 +16,7 @@ from pathlib import Path
 from lxml import etree
 from pptx import Presentation
 
+from .bios import import_bio_slide
 from .model import TEMPLATE_PPTX
 
 A = "http://schemas.openxmlformats.org/drawingml/2006/main"
@@ -345,6 +346,26 @@ def fill_scope(slide, p):
     _strip_ext_ids(tbl)
 
 
+def _slide_index(prs, slide):
+    for i, s in enumerate(prs.slides):
+        if s.part is slide.part:
+            return i
+    return len(prs.slides)
+
+
+def _renumber_bio_slides(prs, bio_slides):
+    """Bio slides carry a hard-coded page number text box; update it to the real position."""
+    for s in bio_slides:
+        n = _slide_index(prs, s) + 1
+        for sh in s.shapes:
+            if sh.has_text_frame and sh.text_frame.text.strip().isdigit() and sh.top and sh.top > 6_000_000:
+                runs = sh.text_frame.paragraphs[0].runs
+                if runs:
+                    runs[0].text = str(n)
+                    for r in runs[1:]:
+                        r.text = ""
+
+
 def generate_pptx(proposal: dict, out_path: Path, template: Path = TEMPLATE_PPTX) -> Path:
     prs = Presentation(str(template))
     slides = list(prs.slides)
@@ -360,14 +381,20 @@ def generate_pptx(proposal: dict, out_path: Path, template: Path = TEMPLATE_PPTX
     to_delete = [tpl[n] for n in FEE_SLIDES]
     if not proposal["scope"]:
         to_delete.append(tpl[SLIDE_SCOPE])
-    team_slide_ids = {m["template_slide"] for m in proposal["team"]}
-    to_delete += [tpl[n] for n in TEAM_SLIDES if n not in team_slide_ids]
+    to_delete += [tpl[n] for n in TEAM_SLIDES]
+    bio_slides = [import_bio_slide(prs, m["id"]) for m in proposal["team"]]
 
     # place generated fee slides right after the scope slide (or after T&C slide 4)
     insert_at = SLIDE_SCOPE if proposal["scope"] else SLIDE_SCOPE - 1
     for i, s in enumerate(fee_slides):
         move_slide(prs, s, insert_at + i)
     delete_slides(prs, to_delete)
+
+    # bios go where the template's team slides were: just before "Services provided..."
+    anchor = _slide_index(prs, tpl[TEAM_SLIDES.stop])
+    for i, s in enumerate(bio_slides):
+        move_slide(prs, s, anchor + i)
+    _renumber_bio_slides(prs, bio_slides)
 
     out_path = Path(out_path)
     out_path.parent.mkdir(parents=True, exist_ok=True)
