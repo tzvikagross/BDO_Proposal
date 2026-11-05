@@ -23,7 +23,9 @@ def load_json(name: str) -> dict:
 
 
 def catalog() -> dict:
-    return load_json("services.json")
+    """The service catalog (assets/services/services.json, edited from the Admin page)."""
+    from .catalog import load
+    return load()
 
 
 def settings() -> dict:
@@ -42,9 +44,15 @@ def format_fee(fee) -> str:
     return s
 
 
+NO_AMOUNT_UNITS = {"Included"}
+
+
 def fee_text(row: dict) -> str:
-    """Text shown in the fee column, e.g. '4,500 Annual'."""
-    parts = [format_fee(row.get("fee")), (row.get("unit") or "").strip()]
+    """Text shown in the fee column, e.g. '4,500 Monthly' or 'Included'."""
+    unit = (row.get("unit") or "").strip()
+    if unit in NO_AMOUNT_UNITS:
+        return unit
+    parts = [format_fee(row.get("fee")), unit]
     return " ".join(p for p in parts if p)
 
 
@@ -54,17 +62,27 @@ def _clean_lines(desc) -> list[str]:
     return [d.strip() for d in (desc or []) if d and d.strip()]
 
 
-def default_proposal(client_type: str = "accounting") -> dict:
+def segment_to_group(seg: dict, currency: str) -> dict:
+    """A catalog segment as a proposal group with the default fees in *currency*."""
+    rows = []
+    for r in seg["rows"]:
+        if r["type"] == "subheader":
+            rows.append(copy.deepcopy(r))
+        else:
+            rows.append({"type": "item", "id": r["id"], "include": r.get("selected", True),
+                         "fee": (r.get("fees") or {}).get(currency), "unit": r["unit"],
+                         "description": list(r["description"])})
+    return {"id": seg["id"], "section": seg.get("section", ""), "title": seg["name"],
+            "fee_header": seg.get("fee_header", "Cost"), "footnotes": seg.get("footnotes", "default"),
+            "bullets": seg.get("bullets", True), "rows": rows}
+
+
+def default_proposal(client_type: str = "accounting", currency: str | None = None) -> dict:
     """A complete proposal pre-filled from the catalog defaults (used by tests/CLI)."""
     cat = catalog()
     ct = cat["client_types"][client_type]
-    groups = []
-    for g in cat["groups"]:
-        if g["id"] not in ct["groups"]:
-            continue
-        g = copy.deepcopy(g)
-        g["rows"] = [r for r in g["rows"] if r.get("include", True)]
-        groups.append(g)
+    currency = currency or ct.get("default_currency", cat["currencies"][0])
+    groups = [segment_to_group(s, currency) for s in cat["segments"] if client_type in s.get("default_for", [])]
     return {
         "client": {
             "company": "Example Company Ltd.",
@@ -72,6 +90,7 @@ def default_proposal(client_type: str = "accounting") -> dict:
             "salutation": "Ms.",
             "opportunity": "000000",
             "client_type": client_type,
+            "currency": currency,
             "title": ct["proposal_title"],
             "date": dt.date.today().isoformat(),
         },
@@ -105,6 +124,10 @@ def normalise(req: dict) -> dict:
     client["date_display"] = f"{d.strftime('%B')} {d.year}"
     client["date_long"] = f"{d.day} {d.strftime('%B')} {d.year}"
     client["client_type_label"] = cat["client_types"][ctype]["label"]
+    cur = (client.get("currency") or cat["client_types"][ctype].get("default_currency") or "USD").strip().upper()
+    if cur not in cat["currencies"]:
+        raise ValueError(f"Unsupported currency: {cur}")
+    client["currency"] = cur
 
     groups = []
     for g in req.get("groups") or []:
@@ -121,7 +144,9 @@ def normalise(req: dict) -> dict:
                     continue
                 item = {"type": "item", "id": r.get("id") or uuid.uuid4().hex[:8],
                         "fee": r.get("fee"), "unit": (r.get("unit") or "").strip(), "description": desc}
-                item["fee_display"] = format_fee(item["fee"])
+                if item["unit"] in NO_AMOUNT_UNITS:
+                    item["fee"] = None
+                item["fee_display"] = format_fee(item["fee"]) if item["unit"] not in NO_AMOUNT_UNITS else item["unit"]
                 item["fee_text"] = fee_text(item)
                 rows.append(item)
         # drop sub-headers that ended up with no items below them
@@ -134,7 +159,6 @@ def normalise(req: dict) -> dict:
             cleaned.append(r)
         if not any(r["type"] == "item" for r in cleaned):
             continue
-        cur = (g.get("currency") or "USD").strip()
         groups.append({
             "id": g.get("id") or uuid.uuid4().hex[:8],
             "section": (g.get("section") or "").strip(),

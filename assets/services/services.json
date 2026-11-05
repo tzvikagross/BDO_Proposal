@@ -1,0 +1,913 @@
+{
+  "_comment": "Service catalog – edit it from the app's Admin page. Each segment is one fee table; each service has a default fee per currency and a unit from 'units'.",
+  "currencies": [
+    "USD",
+    "ILS",
+    "EUR",
+    "GBP"
+  ],
+  "units": [
+    "Monthly",
+    "Hourly",
+    "Annually",
+    "Quarterly",
+    "Per case",
+    "Per employee",
+    "PePP",
+    "Per report",
+    "Per investor",
+    "One-off",
+    "Included"
+  ],
+  "client_types": {
+    "accounting": {
+      "label": "Accounting client",
+      "proposal_title": "Accounting & Outsourcing Services",
+      "default_currency": "USD"
+    },
+    "payroll": {
+      "label": "Payroll only client",
+      "proposal_title": "Payroll Services",
+      "default_currency": "USD"
+    },
+    "fund_admin": {
+      "label": "Fund Admin client",
+      "proposal_title": "Fund Administration Services",
+      "default_currency": "ILS"
+    }
+  },
+  "segments": [
+    {
+      "id": "audit_tax",
+      "name": "Audit & Tax Services",
+      "section": "Audit, Tax & Corporate Services",
+      "default_for": [
+        "accounting"
+      ],
+      "footnotes": "default",
+      "bullets": true,
+      "rows": [
+        {
+          "type": "subheader",
+          "text": "Audit and Tax"
+        },
+        {
+          "type": "service",
+          "id": "audit_fs",
+          "description": [
+            "Audit financial statements"
+          ],
+          "selected": true,
+          "unit": "Annually",
+          "fees": {
+            "USD": 4500,
+            "ILS": 16650,
+            "EUR": 4150,
+            "GBP": 3550
+          }
+        },
+        {
+          "type": "service",
+          "id": "tax_filing",
+          "description": [
+            "Tax filing, preparation and audit"
+          ],
+          "selected": true,
+          "unit": "Annually",
+          "fees": {
+            "USD": 3500,
+            "ILS": 12950,
+            "EUR": 3200,
+            "GBP": 2750
+          }
+        }
+      ]
+    },
+    {
+      "id": "company_secretary",
+      "name": "Company Secretary Services",
+      "section": "Audit, Tax & Corporate Services",
+      "default_for": [
+        "accounting"
+      ],
+      "footnotes": "default",
+      "bullets": true,
+      "rows": [
+        {
+          "type": "subheader",
+          "text": "Company secretary"
+        },
+        {
+          "type": "service",
+          "id": "cosec_setup",
+          "description": [
+            "Set up rep"
+          ],
+          "selected": true,
+          "unit": "One-off",
+          "fees": {
+            "USD": 500,
+            "ILS": 1850,
+            "EUR": 460,
+            "GBP": 395
+          }
+        },
+        {
+          "type": "service",
+          "id": "cosec_annual",
+          "description": [
+            "Annual compliance filing + 2 ad-hoc filings (change of director etc.)"
+          ],
+          "selected": true,
+          "unit": "Monthly",
+          "fees": {
+            "USD": 150,
+            "ILS": 555,
+            "EUR": 140,
+            "GBP": 120
+          }
+        },
+        {
+          "type": "service",
+          "id": "cosec_adhoc",
+          "description": [
+            "Other ad-hoc filings (change of director etc.)"
+          ],
+          "selected": true,
+          "unit": "Per case",
+          "fees": {
+            "USD": 450,
+            "ILS": 1650,
+            "EUR": 415,
+            "GBP": 355
+          }
+        }
+      ]
+    },
+    {
+      "id": "setup",
+      "name": "Set up",
+      "section": "Audit, Tax & Corporate Services",
+      "default_for": [
+        "accounting"
+      ],
+      "footnotes": "default",
+      "bullets": true,
+      "rows": [
+        {
+          "type": "service",
+          "id": "tax_files",
+          "description": [
+            "Opening Tax files"
+          ],
+          "selected": true,
+          "unit": "One-off",
+          "fees": {
+            "USD": 1500,
+            "ILS": 5550,
+            "EUR": 1400,
+            "GBP": 1200
+          }
+        },
+        {
+          "type": "service",
+          "id": "local_address",
+          "description": [
+            "Local address"
+          ],
+          "selected": true,
+          "unit": "Annually",
+          "fees": {
+            "USD": 720,
+            "ILS": 2650,
+            "EUR": 660,
+            "GBP": 570
+          }
+        }
+      ]
+    },
+    {
+      "id": "accounting",
+      "name": "Accounting Services",
+      "section": "Accounting services",
+      "default_for": [
+        "accounting"
+      ],
+      "footnotes": "default",
+      "bullets": true,
+      "rows": [
+        {
+          "type": "subheader",
+          "text": "Monthly Bookkeeping"
+        },
+        {
+          "type": "service",
+          "id": "bk_5",
+          "description": [
+            "Monthly bookkeeping – up to 5 AP invoices"
+          ],
+          "selected": true,
+          "unit": "Monthly",
+          "fees": {
+            "USD": 750,
+            "ILS": 2800,
+            "EUR": 690,
+            "GBP": 590
+          }
+        },
+        {
+          "type": "service",
+          "id": "bk_15",
+          "description": [
+            "Monthly bookkeeping – up to 15 AP invoices"
+          ],
+          "selected": false,
+          "unit": "Monthly",
+          "fees": {
+            "USD": 1250,
+            "ILS": 4600,
+            "EUR": 1150,
+            "GBP": 990
+          }
+        },
+        {
+          "type": "service",
+          "id": "bk_50",
+          "description": [
+            "Monthly bookkeeping – up to 50 AP invoices"
+          ],
+          "selected": false,
+          "unit": "Monthly",
+          "fees": {
+            "USD": 2000,
+            "ILS": 7400,
+            "EUR": 1850,
+            "GBP": 1600
+          }
+        },
+        {
+          "type": "subheader",
+          "text": "Compliance filing"
+        },
+        {
+          "type": "service",
+          "id": "compliance",
+          "description": [
+            "Compliance filing (WHT, VAT, CIT, SoSec)"
+          ],
+          "selected": true,
+          "unit": "Monthly",
+          "fees": {
+            "USD": 350,
+            "ILS": 1300,
+            "EUR": 320,
+            "GBP": 275
+          }
+        },
+        {
+          "type": "subheader",
+          "text": "Controller"
+        },
+        {
+          "type": "service",
+          "id": "controller",
+          "description": [
+            "Monthly Reporting Package (TB, BS & PL)",
+            "I/C reconciliations",
+            "Invoice coding",
+            "Compilation of annual SFS",
+            "Audit assistance",
+            "Tax audits and other regulatory requirements",
+            "Payment Processing (upload to bank)",
+            "AP Assistance"
+          ],
+          "selected": true,
+          "unit": "Hourly",
+          "fees": {
+            "USD": 150,
+            "ILS": 555,
+            "EUR": 140,
+            "GBP": 120
+          }
+        }
+      ]
+    },
+    {
+      "id": "payroll",
+      "name": "Payroll Services",
+      "section": "Payroll services",
+      "default_for": [
+        "accounting",
+        "payroll"
+      ],
+      "footnotes": "default",
+      "bullets": true,
+      "rows": [
+        {
+          "type": "subheader",
+          "text": "Payroll"
+        },
+        {
+          "type": "service",
+          "id": "pr_setup",
+          "description": [
+            "Payroll Setup"
+          ],
+          "selected": true,
+          "unit": "Per employee",
+          "fees": {
+            "USD": 150,
+            "ILS": 555,
+            "EUR": 140,
+            "GBP": 120
+          }
+        },
+        {
+          "type": "service",
+          "id": "pr_fixed",
+          "description": [
+            "Monthly Fixed cost (including monthly and annual compliance reporting)"
+          ],
+          "selected": true,
+          "unit": "Monthly",
+          "fees": {
+            "USD": 350,
+            "ILS": 1300,
+            "EUR": 320,
+            "GBP": 275
+          }
+        },
+        {
+          "type": "service",
+          "id": "pr_slip",
+          "description": [
+            "Monthly calculation – per slip"
+          ],
+          "selected": true,
+          "unit": "Monthly",
+          "fees": {
+            "USD": 50,
+            "ILS": 185,
+            "EUR": 46,
+            "GBP": 40
+          }
+        },
+        {
+          "type": "service",
+          "id": "pr_included",
+          "description": [
+            "Monthly and annual compliance reporting",
+            "Liaising with pension operator / pension funds",
+            "Providing information for Maternity leave and others"
+          ],
+          "selected": true,
+          "unit": "Included",
+          "fees": {
+            "USD": null,
+            "ILS": null,
+            "EUR": null,
+            "GBP": null
+          }
+        },
+        {
+          "type": "service",
+          "id": "pr_onboarding",
+          "description": [
+            "New Employee on boarding / Layoff"
+          ],
+          "selected": true,
+          "unit": "Per case",
+          "fees": {
+            "USD": 150,
+            "ILS": 555,
+            "EUR": 140,
+            "GBP": 120
+          }
+        },
+        {
+          "type": "service",
+          "id": "pr_hr",
+          "description": [
+            "HR Admin"
+          ],
+          "selected": true,
+          "unit": "Hourly",
+          "fees": {
+            "USD": 125,
+            "ILS": 460,
+            "EUR": 115,
+            "GBP": 99
+          }
+        },
+        {
+          "type": "service",
+          "id": "pr_pension_adv",
+          "description": [
+            "Advisory to leaving employee regarding pension (Optional)"
+          ],
+          "selected": true,
+          "unit": "Per case",
+          "fees": {
+            "USD": 180,
+            "ILS": 665,
+            "EUR": 165,
+            "GBP": 140
+          }
+        },
+        {
+          "type": "service",
+          "id": "pr_reports",
+          "description": [
+            "Special management reports"
+          ],
+          "selected": true,
+          "unit": "Hourly",
+          "fees": {
+            "USD": 100,
+            "ILS": 370,
+            "EUR": 92,
+            "GBP": 79
+          }
+        },
+        {
+          "type": "service",
+          "id": "pr_g2n",
+          "description": [
+            "Manual G2N"
+          ],
+          "selected": true,
+          "unit": "Monthly",
+          "fees": {
+            "USD": 350,
+            "ILS": 1300,
+            "EUR": 320,
+            "GBP": 275
+          }
+        },
+        {
+          "type": "service",
+          "id": "pr_pension",
+          "description": [
+            "Pension Administration – fixed fee"
+          ],
+          "selected": true,
+          "unit": "Monthly",
+          "fees": {
+            "USD": 150,
+            "ILS": 555,
+            "EUR": 140,
+            "GBP": 120
+          }
+        },
+        {
+          "type": "service",
+          "id": "pr_pension_pepp",
+          "description": [
+            "Pension Administration – per employee per pension provider"
+          ],
+          "selected": true,
+          "unit": "PePP",
+          "fees": {
+            "USD": 8,
+            "ILS": 30,
+            "EUR": 7,
+            "GBP": 6
+          }
+        }
+      ]
+    },
+    {
+      "id": "fund_services",
+      "name": "Fund Administration Services",
+      "section": "Fund administration services",
+      "default_for": [
+        "fund_admin"
+      ],
+      "footnotes": "fund",
+      "bullets": true,
+      "rows": [
+        {
+          "type": "subheader",
+          "text": "Investor relations services",
+          "note": "30 Investors, 1B Commitment"
+        },
+        {
+          "type": "service",
+          "id": "fa_ir",
+          "description": [
+            "Maintain investors data base (contact, bank details etc.)",
+            "Managing investor relations",
+            "Quarterly Capital accounts",
+            "Carried Interest calculation",
+            "Capital Calls",
+            "Capital Distributions"
+          ],
+          "selected": true,
+          "unit": "Monthly",
+          "fees": {
+            "USD": 1350,
+            "ILS": 5000,
+            "EUR": 1250,
+            "GBP": 1050
+          }
+        },
+        {
+          "type": "service",
+          "id": "fa_bk",
+          "description": [
+            "Bookkeeping Services"
+          ],
+          "selected": true,
+          "unit": "Monthly",
+          "fees": {
+            "USD": 1200,
+            "ILS": 4500,
+            "EUR": 1100,
+            "GBP": 960
+          }
+        },
+        {
+          "type": "service",
+          "id": "fa_controller",
+          "description": [
+            "Fund controller – with annual audited Financial Statements & quarterly reviewed financials"
+          ],
+          "selected": true,
+          "unit": "Monthly",
+          "fees": {
+            "USD": 1900,
+            "ILS": 7000,
+            "EUR": 1750,
+            "GBP": 1500
+          }
+        },
+        {
+          "type": "service",
+          "id": "fa_loans",
+          "description": [
+            "Loan Servicing & Repayment Tracking – for every 10 loans"
+          ],
+          "selected": true,
+          "unit": "Monthly",
+          "fees": {
+            "USD": 1100,
+            "ILS": 4000,
+            "EUR": 995,
+            "GBP": 855
+          }
+        },
+        {
+          "type": "service",
+          "id": "fa_wht",
+          "description": [
+            "Obtain withholding certificate"
+          ],
+          "selected": true,
+          "unit": "One-off",
+          "fees": {
+            "USD": 205,
+            "ILS": 750,
+            "EUR": 185,
+            "GBP": 160
+          }
+        },
+        {
+          "type": "service",
+          "id": "fa_admin",
+          "description": [
+            "Financial Admin assistance"
+          ],
+          "selected": true,
+          "unit": "Hourly",
+          "fees": {
+            "USD": 120,
+            "ILS": 450,
+            "EUR": 110,
+            "GBP": 96
+          }
+        }
+      ]
+    },
+    {
+      "id": "fund_compliance",
+      "name": "Fund Establishment & Compliance",
+      "section": "Fund establishment & regulatory compliance",
+      "default_for": [
+        "fund_admin"
+      ],
+      "footnotes": "fund",
+      "bullets": true,
+      "rows": [
+        {
+          "type": "subheader",
+          "text": "Establishment"
+        },
+        {
+          "type": "service",
+          "id": "fc_setup",
+          "description": [
+            "Investor data collection and set up"
+          ],
+          "selected": true,
+          "unit": "One-off",
+          "fees": {
+            "USD": 1350,
+            "ILS": 5000,
+            "EUR": 1250,
+            "GBP": 1050
+          }
+        },
+        {
+          "type": "subheader",
+          "text": "FATCA & CRS"
+        },
+        {
+          "type": "service",
+          "id": "fc_report",
+          "description": [
+            "FATCA / CRS report with data – generation of XML file",
+            "Filing annual FATCA report & CRS report"
+          ],
+          "selected": true,
+          "unit": "Per report",
+          "fees": {
+            "USD": 810,
+            "ILS": 3000,
+            "EUR": 745,
+            "GBP": 640
+          }
+        },
+        {
+          "type": "service",
+          "id": "fc_nil",
+          "description": [
+            "Filing Nil FATCA / CRS report"
+          ],
+          "selected": true,
+          "unit": "Per report",
+          "fees": {
+            "USD": 205,
+            "ILS": 750,
+            "EUR": 185,
+            "GBP": 160
+          }
+        },
+        {
+          "type": "service",
+          "id": "fc_admin",
+          "description": [
+            "Financial Admin assistance"
+          ],
+          "selected": true,
+          "unit": "Hourly",
+          "fees": {
+            "USD": 110,
+            "ILS": 400,
+            "EUR": 99,
+            "GBP": 85
+          }
+        },
+        {
+          "type": "subheader",
+          "text": "AML & KYC"
+        },
+        {
+          "type": "service",
+          "id": "fc_aml",
+          "description": [
+            "One-time AML & KYC onboarding",
+            "Review KYC & AML documentation",
+            "Assistance with clients' classifications for both FATCA & CRS"
+          ],
+          "selected": true,
+          "unit": "Per investor",
+          "fees": {
+            "USD": 270,
+            "ILS": 1000,
+            "EUR": 250,
+            "GBP": 215
+          }
+        },
+        {
+          "type": "service",
+          "id": "fc_aml_recurring",
+          "description": [
+            "AML & KYC review for recurring investor"
+          ],
+          "selected": true,
+          "unit": "Per investor",
+          "fees": {
+            "USD": 270,
+            "ILS": 1000,
+            "EUR": 250,
+            "GBP": 215
+          }
+        },
+        {
+          "type": "service",
+          "id": "fc_worldcheck",
+          "description": [
+            "Annual World-check screening"
+          ],
+          "selected": true,
+          "unit": "Per investor",
+          "fees": {
+            "USD": 54,
+            "ILS": 200,
+            "EUR": 50,
+            "GBP": 43
+          }
+        }
+      ]
+    },
+    {
+      "id": "other_tax",
+      "name": "Other Tax Services",
+      "section": "Additional services",
+      "default_for": [
+        "accounting"
+      ],
+      "footnotes": "default",
+      "bullets": true,
+      "rows": [
+        {
+          "type": "service",
+          "id": "tp_memo",
+          "description": [
+            "TP memo (assuming one benchmark)"
+          ],
+          "selected": true,
+          "unit": "One-off",
+          "fees": {
+            "USD": 10500,
+            "ILS": 38850,
+            "EUR": 9650,
+            "GBP": 8300
+          }
+        },
+        {
+          "type": "service",
+          "id": "intl_tax",
+          "description": [
+            "International tax advisory (Partner hours)"
+          ],
+          "selected": true,
+          "unit": "Hourly",
+          "fees": {
+            "USD": 300,
+            "ILS": 1100,
+            "EUR": 275,
+            "GBP": 235
+          }
+        }
+      ]
+    },
+    {
+      "id": "vat_rep",
+      "name": "VAT Representation",
+      "section": "Additional services",
+      "default_for": [
+        "accounting"
+      ],
+      "footnotes": "default",
+      "bullets": true,
+      "rows": [
+        {
+          "type": "service",
+          "id": "vat_setup",
+          "description": [
+            "VAT rep set up"
+          ],
+          "selected": true,
+          "unit": "One-off",
+          "fees": {
+            "USD": 1000,
+            "ILS": 3700,
+            "EUR": 920,
+            "GBP": 790
+          }
+        },
+        {
+          "type": "service",
+          "id": "vat_rep_monthly",
+          "description": [
+            "VAT representation"
+          ],
+          "selected": true,
+          "unit": "Monthly",
+          "fees": {
+            "USD": 1500,
+            "ILS": 5550,
+            "EUR": 1400,
+            "GBP": 1200
+          }
+        },
+        {
+          "type": "service",
+          "id": "il_director",
+          "description": [
+            "IL director"
+          ],
+          "selected": false,
+          "unit": "Monthly",
+          "fees": {
+            "USD": 750,
+            "ILS": 2800,
+            "EUR": 690,
+            "GBP": 590
+          }
+        }
+      ]
+    },
+    {
+      "id": "hourly_rates",
+      "name": "Miscellaneous – Hourly Rates",
+      "section": "Additional services",
+      "default_for": [
+        "accounting",
+        "payroll",
+        "fund_admin"
+      ],
+      "footnotes": "default",
+      "bullets": false,
+      "rows": [
+        {
+          "type": "service",
+          "id": "hr_partner",
+          "description": [
+            "Partner"
+          ],
+          "selected": true,
+          "unit": "Hourly",
+          "fees": {
+            "USD": 300,
+            "ILS": 1100,
+            "EUR": 275,
+            "GBP": 235
+          }
+        },
+        {
+          "type": "service",
+          "id": "hr_sm",
+          "description": [
+            "Senior Manager"
+          ],
+          "selected": true,
+          "unit": "Hourly",
+          "fees": {
+            "USD": 250,
+            "ILS": 925,
+            "EUR": 230,
+            "GBP": 200
+          }
+        },
+        {
+          "type": "service",
+          "id": "hr_manager",
+          "description": [
+            "Manager"
+          ],
+          "selected": true,
+          "unit": "Hourly",
+          "fees": {
+            "USD": 150,
+            "ILS": 555,
+            "EUR": 140,
+            "GBP": 120
+          }
+        },
+        {
+          "type": "service",
+          "id": "hr_associate",
+          "description": [
+            "Associate"
+          ],
+          "selected": true,
+          "unit": "Hourly",
+          "fees": {
+            "USD": 95,
+            "ILS": 350,
+            "EUR": 87,
+            "GBP": 75
+          }
+        },
+        {
+          "type": "service",
+          "id": "hr_bookkeeper",
+          "description": [
+            "Bookkeeper"
+          ],
+          "selected": true,
+          "unit": "Hourly",
+          "fees": {
+            "USD": 75,
+            "ILS": 280,
+            "EUR": 69,
+            "GBP": 59
+          }
+        }
+      ],
+      "fee_header": "Hourly Cost"
+    }
+  ]
+}

@@ -12,6 +12,7 @@ from pathlib import Path
 from flask import Flask, Response, abort, jsonify, render_template, request, send_from_directory
 
 from proposal.bios import BIO_DIR, add_bio_from_upload, list_bios
+from proposal import catalog as svc_catalog
 from proposal.html_gen import generate_html, render_html
 from proposal.model import OUTPUT_DIR, ROOT, catalog, normalise, safe_filename, settings
 from proposal.pdf_convert import pptx_to_pdf
@@ -56,12 +57,55 @@ def wizard():
 
 @app.get("/api/catalog")
 def api_catalog():
-    st = settings()
-    return jsonify({
-        "client_types": catalog()["client_types"],
-        "groups": catalog()["groups"],
-        "scope_fields": st["scope_fields"],
-    })
+    return jsonify(catalog() | {"scope_fields": settings()["scope_fields"]})
+
+
+# ---------------------------------------------------------------- admin: service catalog
+@app.get("/admin")
+def admin():
+    return render_template("admin.html")
+
+
+@app.post("/api/admin/catalog")
+def api_admin_save():
+    try:
+        saved = svc_catalog.save(request.get_json(force=True, silent=True) or {})
+    except ValueError as e:
+        return jsonify({"error": str(e)}), 400
+    return jsonify(saved)
+
+
+@app.get("/api/admin/history")
+def api_admin_history():
+    return jsonify(svc_catalog.history())
+
+
+@app.post("/api/admin/restore")
+def api_admin_restore():
+    try:
+        return jsonify(svc_catalog.restore((request.get_json(silent=True) or {}).get("name", "")))
+    except (ValueError, FileNotFoundError) as e:
+        return jsonify({"error": str(e)}), 400
+
+
+@app.get("/api/admin/export.csv")
+def api_admin_csv():
+    import csv
+    import io
+    cat = catalog()
+    buf = io.StringIO()
+    w = csv.writer(buf)
+    w.writerow(["Segment", "Section", "Type", "Description", "Unit"] + [f"Fee {c}" for c in cat["currencies"]] + ["Selected by default"])
+    for seg in cat["segments"]:
+        for r in seg["rows"]:
+            if r["type"] == "subheader":
+                w.writerow([seg["name"], seg["section"], "Sub-heading", r["text"], ""] + [""] * len(cat["currencies"]) + [""])
+            else:
+                w.writerow([seg["name"], seg["section"], "Service", " / ".join(r["description"]), r["unit"]]
+                           + [("" if r["fees"].get(c) is None else r["fees"][c]) for c in cat["currencies"]]
+                           + ["yes" if r.get("selected", True) else "no"])
+    return Response("\ufeff" + buf.getvalue(), mimetype="text/csv",
+                    headers={"Content-Disposition": 'attachment; filename="services.csv"'})
 
 
 @app.get("/api/team")

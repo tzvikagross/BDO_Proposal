@@ -5,3 +5,4 @@ output/
 data/
 *.p12
 .pytest_cache/
+assets/services/history/

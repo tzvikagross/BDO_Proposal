@@ -46,7 +46,7 @@ def test_fee_formatting():
     req = default_proposal("accounting")
     req["groups"][0]["rows"][1]["fee"] = "12500"
     p = normalise(req)
-    assert p["groups"][0]["rows"][1]["fee_text"] == "12,500 Annual"
+    assert p["groups"][0]["rows"][1]["fee_text"] == "12,500 Annually"
 
 
 def test_signed_pdf_is_valid():
@@ -113,3 +113,77 @@ def test_upload_new_bio(tmp_path, monkeypatch):
     assert bio["name"] == "Lea Feinstein" and bio["has_photo"]
     assert (tmp_path / f"{bio['id']}.pptx").exists() and (tmp_path / f"{bio['id']}.json").exists()
     assert [b["id"] for b in bios.list_bios()] == [bio["id"]]
+
+
+# ---------------------------------------------------------------- currencies & service catalog
+@pytest.mark.parametrize("cur", ["USD", "ILS", "EUR", "GBP"])
+def test_defaults_follow_currency(cur):
+    from proposal.catalog import load
+    p = normalise(default_proposal("accounting", cur))
+    seg = next(s for s in load()["segments"] if s["id"] == "audit_tax")
+    expected = seg["rows"][1]["fees"][cur]
+    row = p["groups"][0]["rows"][1]
+    assert p["client"]["currency"] == cur and p["groups"][0]["fee_header"] == f"Cost ({cur})"
+    assert row["fee"] == expected and row["fee_text"].startswith(f"{expected:,}")
+
+
+def test_included_unit_has_no_amount():
+    p = normalise(default_proposal("payroll"))
+    inc = next(r for r in p["groups"][0]["rows"] if r.get("unit") == "Included")
+    assert inc["fee_text"] == "Included"
+
+
+def test_bad_currency_rejected():
+    req = default_proposal("payroll")
+    req["client"]["currency"] = "JPY"
+    with pytest.raises(ValueError):
+        normalise(req)
+
+
+@pytest.fixture
+def temp_catalog(tmp_path, monkeypatch):
+    import shutil
+    import proposal.catalog as catalog
+    src = catalog.CATALOG_FILE
+    monkeypatch.setattr(catalog, "CATALOG_FILE", tmp_path / "services.json")
+    monkeypatch.setattr(catalog, "HISTORY_DIR", tmp_path / "history")
+    shutil.copy(src, tmp_path / "services.json")
+    return catalog
+
+
+def test_admin_add_segment_service_and_save(temp_catalog):
+    cat = temp_catalog.load()
+    cat["segments"].append({"name": "Crypto Services", "section": "Additional services", "default_for": ["accounting"],
+                            "rows": [{"type": "service", "description": "Wallet reconciliation", "unit": "Monthly",
+                                      "fees": {"USD": "1,200", "ILS": 4400, "EUR": "", "GBP": None}}]})
+    cat["segments"] = [s for s in cat["segments"] if s.get("id") != "vat_rep"]
+    saved = temp_catalog.save(cat)
+    seg = saved["segments"][-1]
+    assert seg["id"] == "crypto_services"
+    assert seg["rows"][0]["fees"] == {"USD": 1200, "ILS": 4400, "EUR": None, "GBP": None}
+    assert not any(s["id"] == "vat_rep" for s in temp_catalog.load()["segments"])
+    assert len(temp_catalog.history()) == 1
+
+
+@pytest.mark.parametrize("bad, msg", [
+    ({"unit": "Fortnightly"}, "unit"),
+    ({"description": []}, "description"),
+    ({"fees": {"USD": "abc"}}, "number"),
+])
+def test_admin_validation(temp_catalog, bad, msg):
+    cat = temp_catalog.load()
+    cat["segments"][0]["rows"][1].update(bad)
+    with pytest.raises(ValueError, match=msg):
+        temp_catalog.save(cat)
+
+
+def test_admin_api(temp_catalog):
+    c = app.test_client()
+    assert c.get("/admin").status_code == 200
+    cat = c.get("/api/catalog").get_json()
+    cat["units"].append("Per entity")
+    r = c.post("/api/admin/catalog", json=cat)
+    assert r.status_code == 200 and "Per entity" in r.get_json()["units"]
+    assert c.post("/api/admin/catalog", json={"units": [], "segments": []}).status_code == 400
+    csv = c.get("/api/admin/export.csv").data.decode("utf-8-sig")
+    assert csv.startswith("Segment,Section,Type,Description,Unit,Fee USD")
