@@ -76,6 +76,12 @@ form.sign input[type=text],form.sign input[type=date]{width:100%;padding:10px;bo
 .pad-tools button,.btn2{border:1px solid #c9ced6;background:#fff;border-radius:6px;padding:6px 12px;font:inherit;font-size:13px;cursor:pointer}
 .pad-tools .on{border-color:var(--red);color:var(--red)}
 .consent{display:flex;gap:8px;align-items:flex-start;font-size:13px;margin-top:14px}
+form.sign label.consent{font-weight:normal;font-size:13px}
+form.sign .two{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.pad-hint{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#a0a7b1;font-size:14px;pointer-events:none}
+.after-sign{display:none;margin-top:16px;background:var(--panel);border-radius:8px;padding:12px 14px;font-size:14px}
+.after-sign .btn2{display:inline-block;text-decoration:none;color:var(--ink);background:#fff}
+.after-sign .small{font-size:12px;color:var(--muted);margin:8px 0 0}
 .btn{background:var(--red);color:#fff;border:0;border-radius:8px;padding:12px 22px;font:inherit;font-weight:bold;font-size:15px;cursor:pointer;margin-top:16px}
 .btn:disabled{opacity:.5;cursor:not-allowed}
 .msg{margin-top:12px;font-size:14px}
@@ -228,27 +234,39 @@ footer{border-top:1px solid var(--line);color:var(--muted);font-size:12px;paddin
   <div class="sign-wrap">
     <div class="summary">
       <p>By signing, <b>{{ p.client.company }}</b> accepts the <a href="#" data-goto="terms">Terms and Conditions</a> and the
-      <a href="#" data-goto="fees">Proposed Services and Fees</a> below. A digitally signed PDF containing these two sections will be downloaded.</p>
+      <a href="#" data-goto="fees">Proposed Services and Fees</a> summarised below. Signing creates a PDF of these two sections with your signature, saved on this computer. Nothing is sent anywhere automatically.</p>
       {% for s in p.sections %}
         <p style="margin:12px 0 4px"><b>{{ s.title or 'Services' }}</b></p>
         <table>{% for g in s.groups %}{% for r in g.rows if r.type == 'item' %}
-          <tr><td>{{ r.description[0] }}{% if r.description|length > 1 %} …{% endif %}</td><td>{{ g.currency }} {{ r.fee_text }}</td></tr>
+          <tr><td>{{ r.description[0] }}{% if r.description|length > 1 %} …{% endif %}</td><td>{% if r.unit != 'Included' %}{{ p.client.currency }} {% endif %}{{ r.fee_text }}</td></tr>
         {% endfor %}{% endfor %}</table>
       {% endfor %}
     </div>
     <form class="sign" id="signForm" autocomplete="on">
       <label for="sName">Full name</label>
-      <input type="text" id="sName" required value="{{ p.client.contact_name }}">
+      <input type="text" id="sName" required value="{{ p.client.contact_name }}" autocomplete="name">
+      <div class="two">
+        <div><label for="sInitials">Initials</label><input type="text" id="sInitials" required maxlength="6"></div>
+        <div><label for="sDate">Date</label><input type="date" id="sDate" required></div>
+      </div>
       <label for="sTitle">Job title</label>
-      <input type="text" id="sTitle" required>
-      <label for="sDate">Date</label>
-      <input type="date" id="sDate" required>
+      <input type="text" id="sTitle" required autocomplete="organization-title">
       <label>Signature</label>
-      <div class="pad-tools"><button type="button" id="modeDraw" class="on">Draw</button><button type="button" id="modeType">Type</button><button type="button" id="padClear" style="margin-left:auto">Clear</button></div>
-      <div class="pad-box" style="margin-top:6px"><canvas id="pad" aria-label="Signature pad"></canvas></div>
-      <label class="consent"><input type="checkbox" id="sConsent" required> <span>I confirm I am authorised to sign on behalf of {{ p.client.company }} and agree that this electronic signature is legally binding.</span></label>
+      <div class="pad-tools" role="group" aria-label="Signature style">
+        <button type="button" data-mode="name" class="on">Full name</button>
+        <button type="button" data-mode="initials">Initials</button>
+        <button type="button" data-mode="draw">Draw</button>
+        <button type="button" id="padClear" style="margin-left:auto">Clear</button>
+      </div>
+      <div class="pad-box" style="margin-top:6px"><canvas id="pad" aria-label="Signature preview"></canvas><span class="pad-hint" id="padHint">Draw your signature here</span></div>
+      <label class="consent"><input type="checkbox" id="sConsent" required> <span>I am authorised to sign on behalf of {{ p.client.company }}, and I agree that my typed name, initials or drawn signature above is my electronic signature accepting these Terms and Conditions and the Proposed Services and Fees.</span></label>
       <button class="btn" type="submit" id="signBtn">Sign &amp; download PDF</button>
       <div class="msg" id="signMsg" role="status"></div>
+      <div class="after-sign" id="afterSign">
+        <p><b>Next step:</b> email the signed PDF you just downloaded to {{ p.firm.signatory }} at BDO.</p>
+        <a class="btn2" id="mailBtn" href="#">Open an email to {{ p.firm.email }}</a>
+        <p class="small">Attach the downloaded file (check your Downloads folder) before sending.</p>
+      </div>
     </form>
   </div>
 </section>
@@ -258,7 +276,6 @@ footer{border-top:1px solid var(--line);color:var(--muted);font-size:12px;paddin
 <script>{{ jspdf|safe }}</script>
 <script>
 const PROPOSAL = {{ p_json|safe }};
-const SIGN_URL = {{ sign_url|tojson }};
 const LOGO = {{ a.logo|tojson }};
 (function(){
   const tabs=[...document.querySelectorAll('nav.tabs button')];
@@ -273,86 +290,101 @@ const LOGO = {{ a.logo|tojson }};
   document.querySelectorAll('[data-goto]').forEach(el=>el.addEventListener('click',e=>{e.preventDefault();show(el.dataset.goto)}));
   document.querySelectorAll('.subnav a').forEach(a=>a.addEventListener('click',e=>{e.preventDefault();document.querySelector(a.getAttribute('href')).scrollIntoView({behavior:'smooth'})}));
 
-  // ---- signature pad
-  const cv=document.getElementById('pad'), ctx=cv.getContext('2d');
-  let drawing=false, dirty=false, mode='draw';
+  // ---- signature: typed full name, typed initials, or drawn
+  const $=id=>document.getElementById(id);
+  const cv=$('pad'), ctx=cv.getContext('2d');
+  const SCRIPT='"Segoe Script","Brush Script MT","Lucida Handwriting","Apple Chancery",cursive';
+  let drawing=false, drawn=false, mode='name', initialsTouched=false;
+  const initialsOf=n=>n.trim().split(/\s+/).filter(Boolean).map(w=>w[0].toUpperCase()).join('').slice(0,4);
   function sizePad(){const r=cv.getBoundingClientRect(); if(!r.width) return; const d=window.devicePixelRatio||1;
-    const img=dirty&&mode==='draw'?cv.toDataURL():null; cv.width=r.width*d; cv.height=r.height*d; ctx.setTransform(d,0,0,d,0,0);
+    const img=drawn&&mode==='draw'?cv.toDataURL():null; cv.width=r.width*d; cv.height=r.height*d; ctx.setTransform(d,0,0,d,0,0);
     ctx.lineWidth=2.2; ctx.lineCap='round'; ctx.lineJoin='round'; ctx.strokeStyle='#14213d';
-    if(mode==='type') renderTyped(); else if(img){const i=new Image(); i.onload=()=>ctx.drawImage(i,0,0,r.width,r.height); i.src=img;}}
+    if(mode!=='draw') renderTyped(); else if(img){const i=new Image(); i.onload=()=>ctx.drawImage(i,0,0,r.width,r.height); i.src=img;}}
   window.addEventListener('resize',sizePad);
   function pos(e){const r=cv.getBoundingClientRect();return [e.clientX-r.left,e.clientY-r.top]}
-  cv.addEventListener('pointerdown',e=>{if(mode!=='draw')return;drawing=true;cv.setPointerCapture(e.pointerId);const [x,y]=pos(e);ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(x+.1,y+.1);ctx.stroke();dirty=true});
+  cv.addEventListener('pointerdown',e=>{if(mode!=='draw')return;drawing=true;cv.setPointerCapture(e.pointerId);const [x,y]=pos(e);ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(x+.1,y+.1);ctx.stroke();drawn=true;$('padHint').style.display='none'});
   cv.addEventListener('pointermove',e=>{if(!drawing)return;const [x,y]=pos(e);ctx.lineTo(x,y);ctx.stroke()});
   ['pointerup','pointercancel','pointerleave'].forEach(t=>cv.addEventListener(t,()=>drawing=false));
-  function clearPad(){const r=cv.getBoundingClientRect();ctx.clearRect(0,0,r.width,r.height);dirty=false}
-  function renderTyped(){clearPad();const r=cv.getBoundingClientRect();const n=document.getElementById('sName').value.trim();if(!n)return;
-    ctx.fillStyle='#14213d';ctx.font='italic 44px "Brush Script MT","Segoe Script","Lucida Handwriting",cursive';ctx.textBaseline='middle';
-    let s=44;while(ctx.measureText(n).width>r.width-30&&s>18){s-=2;ctx.font=`italic ${s}px "Brush Script MT","Segoe Script","Lucida Handwriting",cursive`}
-    ctx.fillText(n,15,r.height/2);dirty=true}
-  document.getElementById('padClear').onclick=()=>{clearPad(); if(mode==='type'){mode='draw';setMode()}};
-  function setMode(){document.getElementById('modeDraw').classList.toggle('on',mode==='draw');document.getElementById('modeType').classList.toggle('on',mode==='type');cv.style.cursor=mode==='draw'?'crosshair':'default';clearPad();if(mode==='type')renderTyped()}
-  document.getElementById('modeDraw').onclick=()=>{mode='draw';setMode()};
-  document.getElementById('modeType').onclick=()=>{mode='type';setMode()};
-  document.getElementById('sName').addEventListener('input',()=>{if(mode==='type')renderTyped()});
-  document.getElementById('sDate').valueAsDate=new Date();
+  function clearPad(){const r=cv.getBoundingClientRect();ctx.clearRect(0,0,r.width,r.height);drawn=false}
+  function typedText(){return mode==='initials'?$('sInitials').value.trim():$('sName').value.trim()}
+  function renderTyped(){clearPad();const r=cv.getBoundingClientRect();const n=typedText();if(!n)return;
+    let s=mode==='initials'?64:44;ctx.fillStyle='#14213d';ctx.textBaseline='middle';ctx.font=`italic ${s}px ${SCRIPT}`;
+    while(ctx.measureText(n).width>r.width-30&&s>18){s-=2;ctx.font=`italic ${s}px ${SCRIPT}`}
+    ctx.fillText(n,15,r.height/2)}
+  function hasSignature(){return mode==='draw'?drawn:!!typedText()}
+  function setMode(m){mode=m;document.querySelectorAll('.pad-tools [data-mode]').forEach(b=>b.classList.toggle('on',b.dataset.mode===m));
+    cv.style.cursor=m==='draw'?'crosshair':'default';$('padHint').style.display=m==='draw'?'':'none';clearPad();if(m!=='draw')renderTyped()}
+  document.querySelectorAll('.pad-tools [data-mode]').forEach(b=>b.onclick=()=>setMode(b.dataset.mode));
+  $('padClear').onclick=()=>{if(mode==='draw'){clearPad();$('padHint').style.display=''}else{$(mode==='initials'?'sInitials':'sName').value='';renderTyped()}};
+  $('sName').addEventListener('input',()=>{if(!initialsTouched)$('sInitials').value=initialsOf($('sName').value);if(mode!=='draw')renderTyped()});
+  $('sInitials').addEventListener('input',()=>{initialsTouched=true;if(mode!=='draw')renderTyped()});
+  $('sInitials').value=initialsOf($('sName').value);
+  $('sDate').valueAsDate=new Date();
+  setMode('name');
 
-  // ---- signed state (per viewer)
+  // ---- signed state (per viewer, this browser only)
   const KEY='bdo-signed-'+PROPOSAL.id;
-  function markSigned(info){const b=document.getElementById('signedBadge');b.style.display='block';
-    b.textContent='Signed by '+info.name+' on '+info.date+(info.sealed?' – digitally sealed copy downloaded.':' – copy downloaded.');}
+  function markSigned(info){const b=$('signedBadge');b.style.display='block';
+    b.textContent=`Signed by ${info.name} on ${info.date} – the signed PDF was saved to this computer.`;$('afterSign').style.display='block'}
   try{const s=localStorage.getItem(KEY); if(s) markSigned(JSON.parse(s))}catch(e){}
 
   function download(blob,name){const u=URL.createObjectURL(blob);const a=document.createElement('a');a.href=u;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),4000)}
-  const fname=(PROPOSAL.client.company||'proposal').replace(/[^\w\- ]+/g,'').trim().replace(/\s+/g,'_')+'_Signed_Proposal.pdf';
+  const safe=s=>(s||'').replace(/[^\w\- ]+/g,'').trim().replace(/\s+/g,'_');
+  const fname=safe(PROPOSAL.client.company||'proposal')+'_Signed_Proposal.pdf';
+  const c=PROPOSAL.client;
+  $('mailBtn').href='mailto:'+encodeURIComponent(PROPOSAL.firm.email||'')+'?subject='+encodeURIComponent(`Signed proposal – ${c.company} (${c.opportunity})`)
+    +'&body='+encodeURIComponent(`Hello ${PROPOSAL.firm.signatory||''},\n\nPlease find attached our signed acceptance of the BDO proposal for ${c.title} (proposal ${PROPOSAL.id}).\n\nRegards`);
 
-  document.getElementById('signForm').addEventListener('submit',async e=>{
+  async function fingerprint(){
+    try{const data=new TextEncoder().encode(JSON.stringify({client:c,groups:PROPOSAL.groups,terms:PROPOSAL.terms}));
+      const h=await crypto.subtle.digest('SHA-256',data);return [...new Uint8Array(h)].map(b=>b.toString(16).padStart(2,'0')).join('')}
+    catch(e){return ''}
+  }
+
+  $('signForm').addEventListener('submit',async e=>{
     e.preventDefault();
-    const msg=document.getElementById('signMsg'), btn=document.getElementById('signBtn');
-    if(!dirty){msg.className='msg err';msg.textContent='Please add your signature.';return}
-    const $=id=>document.getElementById(id);
-    const signer={name:$('sName').value.trim(),title:$('sTitle').value.trim(),date:$('sDate').value,signature:cv.toDataURL('image/png')};
+    const msg=$('signMsg'), btn=$('signBtn');
+    if(!hasSignature()){msg.className='msg err';msg.textContent=mode==='draw'?'Please draw your signature.':'Please type your '+(mode==='initials'?'initials.':'name.');return}
+    const now=new Date();
+    const signer={name:$('sName').value.trim(),initials:$('sInitials').value.trim(),title:$('sTitle').value.trim(),date:$('sDate').value,
+      method:{name:'Typed full name',initials:'Typed initials',draw:'Drawn signature'}[mode],signature:cv.toDataURL('image/png'),
+      signedAt:now.toLocaleString('en-GB',{dateStyle:'long',timeStyle:'long'})};
     btn.disabled=true; msg.className='msg'; msg.textContent='Creating your signed PDF…';
-    let sealed=false;
     try{
-      if(!SIGN_URL) throw new Error('offline');
-      const r=await fetch(SIGN_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(signer)});
-      if(!r.ok) throw new Error((await r.text())||r.statusText);
-      download(await r.blob(),fname); sealed=true;
-      msg.className='msg ok'; msg.textContent='Thank you! Your digitally signed PDF has been downloaded and a copy was sent to BDO.';
-    }catch(err){
-      try{ download(localPdf(signer),fname);
-        msg.className='msg ok'; msg.textContent='Signed PDF downloaded. (BDO\'s signing service could not be reached, so this copy is electronically signed but not digitally sealed – please send it to your BDO contact.)';
-      }catch(e2){msg.className='msg err';msg.textContent='Could not create the PDF: '+e2.message; btn.disabled=false; return}
-    }
-    const info={name:signer.name,date:signer.date,sealed}; markSigned(info);
-    try{localStorage.setItem(KEY,JSON.stringify(info))}catch(e){}
+      signer.hash=await fingerprint();
+      download(buildPdf(signer),fname);
+      msg.className='msg ok'; msg.textContent='Your signed PDF has been downloaded.';
+      const info={name:signer.name,date:signer.date}; markSigned(info);
+      try{localStorage.setItem(KEY,JSON.stringify(info))}catch(e){}
+    }catch(err){msg.className='msg err';msg.textContent='Could not create the PDF: '+err.message}
     btn.disabled=false;
   });
 
   const h=location.hash.slice(1); if(h && tabs.some(b=>b.dataset.tab===h)) show(h,false);
 
-  // ---- offline fallback: build the T&C + fees PDF in the browser
-  function localPdf(signer){
+  // ---- the signed PDF: Terms & Conditions + Proposed Services & Fees + signature, built in the browser
+  function buildPdf(signer){
     const {jsPDF}=window.jspdf; const doc=new jsPDF({unit:'mm',format:'a4'});
     const W=210,M=18,CW=W-2*M; let y=22;
-    const ink=[51,51,51], red=[232,26,59], slate=[101,124,145], band=[238,240,243], sub=[217,222,228];
-    const c=PROPOSAL.client;
-    function header(){doc.setFontSize(7.5);doc.setTextColor(120);doc.text(`${c.company}  ·  ${c.title}  ·  Opportunity ${c.opportunity}`,M,12);
+    const ink=[51,51,51], red=[232,26,59], slate=[101,124,145], band=[238,240,243], sub=[217,222,228], grey=[110,110,110];
+    doc.setProperties({title:`Signed proposal – ${c.company}`,subject:`Acceptance of BDO proposal ${PROPOSAL.id}`,
+      author:signer.name,keywords:`BDO, proposal, ${c.opportunity}`,creator:'BDO Proposal (browser)'});
+    function header(){doc.setFontSize(7.5);doc.setTextColor(...grey);doc.setFont('helvetica','normal');
+      doc.text(`${c.company}  ·  ${c.title}  ·  Opportunity ${c.opportunity}`,M,12);
       try{doc.addImage(LOGO,'PNG',W-M-22,6,22,8.5)}catch(e){} }
-    function need(h){if(y+h>282){doc.addPage();header();y=22}}
+    function need(h){if(y+h>280){doc.addPage();header();y=22}}
     function text(t,size,opts={}){doc.setFont('helvetica',opts.bold?'bold':'normal');doc.setFontSize(size);doc.setTextColor(...(opts.color||ink));
       const lines=doc.splitTextToSize(t,opts.w||CW);const lh=size*0.42;need(lines.length*lh);doc.text(lines,opts.x||M,y);y+=lines.length*lh+(opts.after??1.5)}
     header();
     text('Fee Proposal – Acceptance',18,{bold:true,color:red,after:3});
-    text(`Client: ${c.company}\nContact: ${(c.salutation+' '+c.contact_name).trim()}\nServices: ${c.title}\nProposal date: ${c.date_long}`,9.5,{after:4});
+    text(`Client: ${c.company}\nContact: ${(c.salutation+' '+c.contact_name).trim()}\nServices: ${c.title}\nProposal date: ${c.date_long}   ·   Fees in ${c.currency}`,9.5,{after:4});
     text('1. Acceptance, Terms and Conditions',12.5,{bold:true,after:2});
     PROPOSAL.terms.forEach(t=>{text(t.heading.toUpperCase(),9.5,{bold:true,after:1});t.paragraphs.forEach(p=>text(p,8.6,{after:1.8}))});
     doc.addPage();header();y=22;
     text('2. Proposed Services and Fees',12.5,{bold:true,after:2});
     const fw=CW*0.3, dw=CW*0.7;
     function row(fee,desc,fill,bold,white){doc.setFontSize(8.2);doc.setFont('helvetica',bold?'bold':'normal');
-      const fl=doc.splitTextToSize(fee||'',fw-4), dl=[].concat(...desc.map((d,i)=>doc.splitTextToSize(d,dw-6)));
+      const fl=doc.splitTextToSize(fee||'',fw-4), dl=[].concat(...desc.map(d=>doc.splitTextToSize(d,dw-6)));
       const h=Math.max(fl.length,dl.length)*3.6+3; need(h+1);
       doc.setFillColor(...fill);doc.rect(M,y,CW,h,'F');doc.setTextColor(...(white?[255,255,255]:ink));
       doc.text(fl,M+fw/2,y+4.6,{align:'center'});doc.text(dl,M+fw+3,y+4.6);y+=h+0.7}
@@ -362,13 +394,19 @@ const LOGO = {{ a.logo|tojson }};
           else row(r.fee_text.replace(/\n/g,' '),(g.bullets&&r.description.length>1)?r.description.map(d=>'• '+d):r.description,band,false)});
         y+=3});
       s.footnote_lines.forEach(f=>text(f,7.4,{color:[85,85,85],after:0.6})); y+=3});
-    need(48); text('Approved by',12.5,{bold:true,after:2});
-    doc.setDrawColor(...red);doc.setLineWidth(.4);doc.rect(M,y,CW,36);
-    doc.setFontSize(9);doc.setFont('helvetica','bold');doc.text('Name:',M+3,y+7);doc.text('Job Title:',M+CW*0.55,y+7);doc.text('Signature:',M+3,y+24);doc.text('Date:',M+CW*0.55,y+24);
-    doc.setFont('helvetica','normal');doc.text(signer.name,M+24,y+7);doc.text(signer.title,M+CW*0.55+18,y+7);doc.text(signer.date,M+CW*0.55+18,y+24);
-    try{doc.addImage(signer.signature,'PNG',M+24,y+12,55,20)}catch(e){}
-    y+=40; text('Electronically signed in browser at '+new Date().toISOString()+' · Proposal '+PROPOSAL.id,7.4,{color:[85,85,85]});
-    const n=doc.getNumberOfPages();for(let i=1;i<=n;i++){doc.setPage(i);doc.setFontSize(7.5);doc.setTextColor(120);doc.text(`Proposal ${PROPOSAL.id}`,M,287);doc.text(`Page ${i}`,W-M,287,{align:'right'})}
+    need(70); y+=2; text('Approved by',12.5,{bold:true,after:2});
+    doc.setDrawColor(...red);doc.setLineWidth(.4);doc.rect(M,y,CW,40);
+    doc.setFontSize(9);doc.setTextColor(...ink);doc.setFont('helvetica','bold');
+    doc.text('Name:',M+3,y+7);doc.text('Job Title:',M+CW*0.55,y+7);doc.text('Initials:',M+CW*0.55,y+15);doc.text('Signature:',M+3,y+26);doc.text('Date:',M+CW*0.55,y+26);
+    doc.setFont('helvetica','normal');doc.text(signer.name,M+24,y+7);doc.text(signer.title,M+CW*0.55+18,y+7);doc.text(signer.initials,M+CW*0.55+18,y+15);doc.text(signer.date,M+CW*0.55+18,y+26);
+    const r=cv.getBoundingClientRect(), ih=20, iw=Math.min(70,ih*(r.width/r.height||3));
+    try{doc.addImage(signer.signature,'PNG',M+24,y+15,iw,ih)}catch(e){}
+    y+=46;
+    text(`Simple electronic signature (${signer.method.toLowerCase()}) applied by ${signer.name} on ${signer.signedAt}.`,7.6,{color:[85,85,85],after:0.8});
+    if(signer.hash) text(`Document fingerprint (SHA-256 of the accepted terms and fees): ${signer.hash}`,7.6,{color:[85,85,85],after:0.8});
+    const n=doc.getNumberOfPages();
+    for(let i=1;i<=n;i++){doc.setPage(i);doc.setFont('helvetica','normal');doc.setFontSize(7.5);doc.setTextColor(...grey);
+      doc.text(`Proposal ${PROPOSAL.id}`,M,287);doc.text(`Initials: ${signer.initials}`,W/2,287,{align:'center'});doc.text(`Page ${i} of ${n}`,W-M,287,{align:'right'})}
     return doc.output('blob');
   }
 })();

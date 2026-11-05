@@ -1,4 +1,7 @@
-"""Self-contained interactive HTML proposal (one file; images and scripts inlined)."""
+"""Self-contained interactive HTML proposal (one file; images and scripts inlined).
+
+The file works offline: the client opens it from the e-mail, signs it in the browser and
+downloads the signed PDF – it never contacts the server."""
 from __future__ import annotations
 
 import base64
@@ -29,16 +32,16 @@ def assets_for(proposal: dict) -> dict:
     }
 
 
-def render_html(proposal: dict, sign_url: str | None) -> str:
+def render_html(proposal: dict) -> str:
     jspdf = (ROOT / "vendor" / "jspdf.umd.min.js").read_text(encoding="utf-8")
     p_json = json.dumps(proposal, ensure_ascii=False).replace("</", "<\\/")
     return _env.get_template("proposal.html").render(
-        p=proposal, a=assets_for(proposal), p_json=p_json, sign_url=sign_url or "",
+        p=proposal, a=assets_for(proposal), p_json=p_json,
         jspdf=jspdf.replace("</script", "<\\/script"))
 
 
-def generate_html(proposal: dict, out_path: Path, sign_url: str | None) -> Path:
+def generate_html(proposal: dict, out_path: Path) -> Path:
     out_path = Path(out_path)
     out_path.parent.mkdir(parents=True, exist_ok=True)
-    out_path.write_text(render_html(proposal, sign_url), encoding="utf-8")
+    out_path.write_text(render_html(proposal), encoding="utf-8")
     return out_path

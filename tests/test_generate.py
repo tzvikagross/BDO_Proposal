@@ -9,7 +9,6 @@ from pptx import Presentation
 from app import app
 from proposal.model import default_proposal, normalise
 from proposal.pptx_gen import generate_pptx
-from proposal.sign import build_acceptance_pdf, create_signed_acceptance
 
 SIG = ("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA"
        "60e6kgAAAABJRU5ErkJggg==")
@@ -49,16 +48,17 @@ def test_fee_formatting():
     assert p["groups"][0]["rows"][1]["fee_text"] == "12,500 Annually"
 
 
-def test_signed_pdf_is_valid():
-    from pyhanko.pdf_utils.reader import PdfFileReader
-    from pyhanko.sign.validation import validate_pdf_signature
-    from pyhanko_certvalidator import ValidationContext
-
+def test_html_is_self_contained_and_offline(tmp_path):
+    """The emailed HTML must work on the client's computer without contacting any server."""
+    import re
+    from proposal.html_gen import generate_html
     p = normalise(default_proposal("fund_admin"))
-    pdf = create_signed_acceptance(p, {"name": "Jane", "title": "CFO", "date": "2026-11-04", "signature": SIG})
-    sig = PdfFileReader(io.BytesIO(pdf)).embedded_signatures[0]
-    st = validate_pdf_signature(sig, ValidationContext(trust_roots=[sig.signer_cert], allow_fetching=False))
-    assert st.intact and st.valid
+    html = generate_html(p, tmp_path / "p.html").read_text(encoding="utf-8")
+    own_script = html[html.index("const PROPOSAL = "):]         # our code (the bundled jsPDF library comes before it)
+    assert "fetch(" not in own_script and "XMLHttpRequest" not in own_script and "sendBeacon" not in own_script
+    assert not re.search(r'<(script|link|img)[^>]+(src|href)="https?://', html)
+    assert "window.jspdf" in html and "Sign &amp; download PDF" in html
+    assert p["firm"]["email"] in html                     # "email the signed PDF to BDO" button
 
 
 def test_api_flow(tmp_path, monkeypatch):
@@ -72,9 +72,8 @@ def test_api_flow(tmp_path, monkeypatch):
     j = r.get_json()
     assert set(j["files"]) == {"pptx", "html", "online"}
     assert c.get(j["files"]["html"]).status_code == 200
-    r = c.post(f"/api/proposals/{j['id']}/sign", json={"name": "Jane", "title": "CFO", "date": "2026-11-04", "signature": SIG})
-    assert r.status_code == 200 and r.data[:4] == b"%PDF"
-    assert r.headers["Access-Control-Allow-Origin"] == "*"
+    assert c.get(j["files"]["online"]).status_code == 200
+    assert c.post(f"/api/proposals/{j['id']}/sign", json={}).status_code in (404, 405)   # no signing server
     assert c.post("/api/proposals", json={"proposal": {"client": {}}}).status_code == 400
 
 
@@ -195,7 +194,6 @@ def test_links_under_sub_path(tmp_path, monkeypatch):
     import proposal.model as model
     monkeypatch.setattr(appmod, "OUTPUT_DIR", tmp_path)
     monkeypatch.setattr(model, "OUTPUT_DIR", tmp_path)
-    monkeypatch.setenv("PUBLIC_BASE_URL", "https://intranet.example/proposals/")
     c = app.test_client()
     env = "http://localhost/proposals/"
     page = c.get("/", base_url=env).get_data(as_text=True)
@@ -203,6 +201,4 @@ def test_links_under_sub_path(tmp_path, monkeypatch):
     r = c.post("/api/proposals", json={"proposal": default_proposal("payroll"), "formats": ["html"]}, base_url=env)
     j = r.get_json()
     assert j["files"]["html"].startswith("/proposals/proposals/")
-    assert j["files"]["online"] == f"https://intranet.example/proposals/p/{j['id']}"
-    html = (tmp_path / j["id"]).glob("*.html").__next__().read_text(encoding="utf-8")
-    assert f'"https://intranet.example/proposals/api/proposals/{j["id"]}/sign"' in html
+    assert j["files"]["online"] == f"/proposals/p/{j['id']}"

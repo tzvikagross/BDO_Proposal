@@ -5,7 +5,7 @@
 .DESCRIPTION
   Run in Windows PowerShell (not PowerShell 7) opened with "Run as Administrator", from the app folder:
 
-    .\deploy\iis\setup-iis.ps1 -PublicBaseUrl "https://intranet.bdo.co.il/proposals"
+    .\deploy\iis\setup-iis.ps1
 
   What it does:
     1. checks IIS and HttpPlatformHandler are installed
@@ -16,8 +16,6 @@
        or a separate site with -NewSiteName/-Port
   Re-run it after updating the code (git pull) – it is safe to run more than once.
 
-.PARAMETER PublicBaseUrl
-  The address clients will use, including the application path, e.g. https://server/proposals
 .PARAMETER SiteName
   Existing IIS site to add the application to (default "Default Web Site").
 .PARAMETER AppName
@@ -30,20 +28,16 @@
   Python 3.10+ installed for all users. Default: found with the "py" launcher.
 .PARAMETER SofficePath
   LibreOffice soffice.exe (for PDF). Default: C:\Program Files\LibreOffice\program\soffice.exe if present.
-.PARAMETER P12Password
-  Password of data\signing.p12 if you install BDO's signing certificate.
 #>
 [CmdletBinding()]
 param(
-  [Parameter(Mandatory = $true)][string]$PublicBaseUrl,
   [string]$SiteName = "Default Web Site",
   [string]$AppName = "proposals",
   [string]$NewSiteName = "",
   [int]$Port = 8080,
   [string]$AppPoolName = "BDOProposals",
   [string]$PythonExe = "",
-  [string]$SofficePath = "",
-  [string]$P12Password = ""
+  [string]$SofficePath = ""
 )
 
 $ErrorActionPreference = "Stop"
@@ -88,7 +82,7 @@ if (-not $SofficePath) {
   }
 }
 if ($SofficePath) { Write-Host "LibreOffice: $SofficePath" }
-else { Write-Warning "LibreOffice not found – PDF output will be unavailable (PPTX, HTML and signing still work)." }
+else { Write-Warning "LibreOffice not found – PDF output will be unavailable (PPTX and HTML still work)." }
 
 # ---------------------------------------------------------------- python environment
 Step "Creating the Python environment (.venv) and installing packages"
@@ -99,7 +93,7 @@ if (-not (Test-Path $venvPy)) { & $PythonExe -m venv (Join-Path $AppDir ".venv")
 if ($LASTEXITCODE -ne 0) { Fail "pip install failed." }
 Push-Location $AppDir; & $venvPy -c "import app; print('App imports OK')"; Pop-Location
 
-foreach ($d in @("output", "data", "logs", "assets\services\history")) {
+foreach ($d in @("output", "logs", "assets\services\history")) {
   New-Item -ItemType Directory -Force -Path (Join-Path $AppDir $d) | Out-Null
 }
 
@@ -111,9 +105,7 @@ $tpl = Get-Content (Join-Path $PSScriptRoot "web.config.template") -Raw
 $cfg = $tpl.Replace("{{PYTHON}}", (XmlEsc $venvPy))
 $cfg = $cfg.Replace("{{APP_DIR}}", (XmlEsc $AppDir))
 $cfg = $cfg.Replace("{{URL_PREFIX}}", (XmlEsc $prefix))
-$cfg = $cfg.Replace("{{PUBLIC_BASE_URL}}", (XmlEsc $PublicBaseUrl.TrimEnd("/")))
 $cfg = $cfg.Replace("{{SOFFICE_PATH}}", (XmlEsc $SofficePath))
-$cfg = $cfg.Replace("{{P12_PASSWORD}}", (XmlEsc $P12Password))
 Set-Content -Path (Join-Path $AppDir "web.config") -Value $cfg -Encoding UTF8
 
 # allow web.config to configure the handler (locked by default on many servers)
@@ -131,7 +123,7 @@ Set-ItemProperty "IIS:\AppPools\$AppPoolName" -Name startMode -Value "AlwaysRunn
 Step "Granting the app pool access to the app folder"
 $identity = "IIS AppPool\$AppPoolName"
 icacls $AppDir /grant "${identity}:(OI)(CI)RX" /T /Q | Out-Null
-foreach ($d in @("output", "data", "logs", "assets\team", "assets\services")) {
+foreach ($d in @("output", "logs", "assets\team", "assets\services")) {
   icacls (Join-Path $AppDir $d) /grant "${identity}:(OI)(CI)M" /T /Q | Out-Null
 }
 
@@ -173,4 +165,4 @@ try {
   Write-Warning "The site did not respond correctly: $($_.Exception.Message)"
   Write-Warning "Check the log files in $AppDir\logs and the troubleshooting section of deploy\iis\README.md."
 }
-Write-Host "`nPublic address: $PublicBaseUrl   (Admin: $($PublicBaseUrl.TrimEnd('/'))/admin)"
+Write-Host "`nStaff open the wizard at http://<this-server>$(if ($prefix) { $prefix } else { '' })/  (Admin: .../admin)"

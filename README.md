@@ -6,15 +6,20 @@ A small web app that turns a few answers (client details, client type and fees) 
 |---|---|
 | **PPTX** | The full template deck: cover, letter, contents, T&C, scope, about-BDO and the selected team, with the fee slides rebuilt from the services you chose. The tables are cloned from the template, so they keep its formatting. |
 | **PDF** | The same deck exported through LibreOffice. |
-| **HTML** | A single self-contained file (also served online at `/p/<id>`). Each part of the proposal has its own tab. Inside *Proposed Services & Fees*, each service group appears as its own sub-section. The *Accept & Sign* tab lets the client sign. |
+| **HTML** | A single self-contained file to email to the client. It works offline. Each part of the proposal has its own tab. Inside *Proposed Services & Fees*, each service segment appears as its own sub-section. The *Accept & Sign* tab lets the client sign. Staff can preview it on the LAN at `/p/<id>`. |
 
-### Digital signing (HTML)
-The client fills in name, title and date, then draws or types a signature and clicks **Sign & download PDF**:
+### How the client signs (no server needed)
+The app is used by BDO staff on the LAN; clients never connect to it. You **email the HTML file** to the client, and the client opens it on their own computer:
 
-1. **Online (the normal case).** The proposal posts to the app's `/api/proposals/<id>/sign` endpoint. The server builds a PDF that contains only **Terms & Conditions and Proposed Services & Fees**, together with the signature block and an audit trail (UTC time, IP and a SHA-256 hash of the proposal). It then seals the PDF with a **PAdES digital signature** using BDO's certificate (pyHanko). The client downloads the sealed PDF, and a copy is kept in `output/<id>/signed/`.
-2. **Offline fallback.** If the signing server can't be reached (for example, the HTML was opened from an email while the app is down), the browser builds the same two-section PDF with the signature image. This copy is electronically signed but **not** cryptographically sealed, and the client is told so.
+1. In the **Accept & Sign** tab they enter their name, initials, job title and date, and sign with a **simple electronic signature**: their typed **full name**, their typed **initials**, or a **drawn** signature.
+2. They tick the confirmation box and click **Sign & download PDF**. Their browser creates a PDF with only the **Terms & Conditions and Proposed Services & Fees**, plus:
+   - the signature block;
+   - their initials on every page;
+   - the signing date and time;
+   - a SHA-256 fingerprint of the accepted terms and fees.
+3. An **Open an email** button starts an email to BDO (`firm.email` in `config/settings.json`), and they attach the downloaded PDF.
 
-> **Certificate:** put BDO's real signing certificate at `data/signing.p12` and set its password in the `BDO_SIGNING_P12_PASSWORD` environment variable. Until then, a **self-signed development certificate** is created automatically. PDFs signed with it are valid and tamper-evident, but Adobe will mark the signer as "unknown".
+Nothing is sent anywhere automatically, and the file never contacts your server.
 
 ## Running
 
@@ -23,22 +28,22 @@ pip install -r requirements.txt
 python app.py                # open http://localhost:5000
 ```
 
-PDF export needs [LibreOffice](https://www.libreoffice.org/). If `soffice` isn't on your PATH, set `SOFFICE_PATH`. To let clients sign from the HTML file, the app has to be reachable by them. Deploy it and set `PUBLIC_BASE_URL` (for example `https://proposals.bdo.co.il`) so the generated files point to the right signing URL.
+PDF export needs [LibreOffice](https://www.libreoffice.org/). If `soffice` isn't on your PATH, set `SOFFICE_PATH`.
 
 ## Running on IIS (Windows server)
-IIS runs the Python app for you, using Microsoft's HttpPlatformHandler module. Opening the site, or an application such as `https://server/proposals/`, shows the wizard. A setup script installs everything:
+IIS runs the Python app for you, using Microsoft's HttpPlatformHandler module. Opening the site, or an application such as `http://server/proposals/`, shows the wizard to staff on the LAN. A setup script installs everything:
 
 ```bash
-powershell -ExecutionPolicy Bypass -File .\deploy\iis\setup-iis.ps1 -PublicBaseUrl "https://intranet.bdo.co.il/proposals"
+powershell -ExecutionPolicy Bypass -File .\deploy\iis\setup-iis.ps1
 ```
 
-See **[deploy/iis/README.md](deploy/iis/README.md)** for the prerequisites, HTTPS, access control, updating and troubleshooting. To run the production server on any other system:
+See **[deploy/iis/README.md](deploy/iis/README.md)** for the prerequisites, updating and troubleshooting. To run the production server on any other system:
 
 ```bash
 python serve.py
 ```
 
-It reads `PORT`, `URL_PREFIX` (e.g. `/proposals`), `PUBLIC_BASE_URL` and `BEHIND_PROXY`.
+It reads `PORT`, `URL_PREFIX` (e.g. `/proposals`) and `SOFFICE_PATH`.
 
 ## The wizard
 1. **Client details:** company, contact person (salutation and name), opportunity number, date, **currency** (ILS, USD, EUR or GBP), client type (*Accounting*, *Payroll only*, *Fund Admin*), cover title and optional scope of operations. Each client type has a default currency (USD; ILS for Fund Admin), and you can change it.
@@ -81,13 +86,13 @@ Open **Admin** (top right of the wizard, or `/admin`) to edit the services the w
 
 > The non-USD default prices were first calculated from the template's prices (ILS ≈ 3.7 × USD, EUR ≈ 0.92 × USD, GBP ≈ 0.79 × USD, rounded). Fund services started from the template's ILS prices. Please review them in Admin.
 
-Anyone who can open the app can use Admin. If the app is reachable from outside BDO, put it behind your login or VPN.
+Admin has no separate login: every employee who can open the app can use it.
 
 ## Customising
 | File | Purpose |
 |---|---|
 | `assets/services/services.json` | Service catalog. Edit it through **Admin** (see above) |
-| `config/settings.json` | Firm details, letter text, terms & conditions (used by the HTML and the signed PDF), footnotes, scope fields, signing certificate |
+| `config/settings.json` | Firm details (including the e-mail clients send the signed PDF to), letter text, terms & conditions (used by the HTML and the signed PDF), footnotes, scope fields |
 | `template/New_Proposal_Format.pptx` | The PowerPoint template. If you change its slide order, update the slide numbers at the top of `proposal/pptx_gen.py`. Run `python scripts/build_assets.py` afterwards to refresh the images used by the HTML |
 
 Terms & conditions in the **PPTX** come straight from template slide 4. If you edit them in `settings.json`, edit the template too.
@@ -103,12 +108,11 @@ proposal/catalog.py     service catalog: load, validate, save with history
 proposal/bios.py        engagement-team bios (assets/team) and bio-slide import
 proposal/pdf_convert.py LibreOffice PPTX→PDF
 proposal/html_gen.py    self-contained HTML proposal
-proposal/sign.py        T&C + fees acceptance PDF and PAdES signing
 templates/              wizard.html, admin.html, proposal.html (Jinja)
 static/                 wizard and admin JS/CSS
 assets/services/        services.json – the service catalog (edited in Admin)
 assets/                 images extracted from the template for the HTML
-vendor/jspdf.umd.min.js offline PDF fallback (inlined into the HTML)
+vendor/jspdf.umd.min.js builds the signed PDF in the client's browser (inlined into the HTML)
 tests/                  pytest suite
 ```
 

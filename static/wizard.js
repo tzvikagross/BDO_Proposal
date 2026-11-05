@@ -211,10 +211,10 @@
       const r = await fetch(BASE + '/api/proposals', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ proposal: collect(), formats }) });
       const j = await r.json();
       if (!r.ok) throw new Error(j.error || r.statusText);
-      const label = { pptx: 'Download PowerPoint', pdf: 'Download PDF', html: 'Download HTML file', online: 'Open online proposal ↗' };
+      const label = { pptx: 'Download PowerPoint', pdf: 'Download PDF', html: 'Download HTML file (to email)', online: 'Preview HTML ↗' };
       res.innerHTML = `<div class="ok"><b>Proposal ready.</b> Reference ${esc(j.id)}<br>
         ${Object.entries(j.files).map(([k, u]) => `<a class="dl" href="${esc(u)}" ${k === 'online' ? 'target="_blank" rel="noopener"' : ''}>${label[k] || k}</a>`).join('')}
-        ${j.files.online ? `<p style="font-size:13px;margin:12px 0 0">Send the client the HTML file or the online link (${esc(j.files.online)}). When they sign, the digitally signed PDF is saved under this proposal and listed in “Previous proposals”.</p>` : ''}
+        ${j.files.html ? `<p style="font-size:13px;margin:12px 0 0">Email the HTML file to the client. They open it on their own computer, sign in the <b>Accept &amp; Sign</b> tab with their name or initials, download the signed PDF and email it back to you. The file works offline and never contacts this server.</p>` : ''}
         ${Object.entries(j.errors || {}).map(([k, v]) => `<p class="err" style="margin-top:10px">${esc(k.toUpperCase())}: ${esc(v)}</p>`).join('')}</div>`;
     } catch (e) {
       res.innerHTML = `<div class="err">${esc(e.message)}</div>`;
@@ -225,10 +225,10 @@
   $('#historyLink').addEventListener('click', async e => {
     e.preventDefault();
     const rows = await (await fetch(BASE + '/proposals')).json();
-    $('#histTable').innerHTML = '<tr><th>Date</th><th>Client</th><th>Services</th><th>Signed copies</th><th></th></tr>' + (rows.map(r =>
+    $('#histTable').innerHTML = '<tr><th>Date</th><th>Client</th><th>Services</th><th>Files</th><th></th></tr>' + (rows.map(r =>
       `<tr><td>${esc(r.date)}</td><td>${esc(r.company)}</td><td>${esc(r.title)}</td>
-        <td>${r.signed.length ? r.signed.map(u => `<a href="${esc(u)}">PDF</a>`).join(' ') : '—'}</td>
-        <td><a href="${BASE}/p/${esc(r.id)}" target="_blank" rel="noopener">Open</a></td></tr>`).join('') || '<tr><td colspan="5">No proposals yet.</td></tr>');
+        <td>${Object.entries(r.files || {}).map(([k, u]) => `<a href="${esc(u)}">${k.toUpperCase()}</a>`).join(' · ') || '—'}</td>
+        <td><a href="${esc(r.online)}" target="_blank" rel="noopener">Preview</a></td></tr>`).join('') || '<tr><td colspan="5">No proposals yet.</td></tr>');
     $$('.step').forEach(s => s.classList.toggle('on', s.id === 'step-history'));
     $$('#steps li').forEach(li => li.classList.remove('on'));
   });

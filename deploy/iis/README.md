@@ -1,12 +1,14 @@
 # Running the Proposal Generator on IIS
 
-IIS can't run this app as a static `index.html`. Building the PPTX and PDF, digitally signing, saving Admin changes and storing bio uploads all happen in the Python part of the app, on the server. IIS hosts it using Microsoft's **HttpPlatformHandler** module:
+IIS can't run this app as a static `index.html`. Building the PPTX and PDF, saving Admin changes and storing bio uploads all happen in the Python part of the app, on the server. IIS hosts it using Microsoft's **HttpPlatformHandler** module:
 
 ```
-browser ──► IIS (HTTPS, your domain) ──► HttpPlatformHandler ──► serve.py (Python, waitress)
+staff browser (LAN) ──► IIS ──► HttpPlatformHandler ──► serve.py (Python, waitress)
 ```
 
 IIS starts the Python app automatically and restarts it if it stops. Every request is passed to the app, so opening the site or application address shows the wizard. You don't need a separate service or a scheduled task.
+
+The server only needs to be reachable by **staff on the LAN**. Clients never connect to it: they receive the proposal's HTML file by email, and sign it in their own browser.
 
 ## 1. Install the prerequisites (once per server)
 
@@ -26,14 +28,14 @@ git clone https://github.com/tzvikagross/BDO_Proposal.git C:\inetpub\BDO_Proposa
 ```
 
 ## 3. Run the setup script
-Open **Windows PowerShell as Administrator**, go to the app folder and run the script. Give it the public address that people will use:
+Open **Windows PowerShell as Administrator**, go to the app folder and run the script:
 
 ```bash
 cd C:\inetpub\BDO_Proposal
-powershell -ExecutionPolicy Bypass -File .\deploy\iis\setup-iis.ps1 -PublicBaseUrl "https://intranet.bdo.co.il/proposals"
+powershell -ExecutionPolicy Bypass -File .\deploy\iis\setup-iis.ps1
 ```
 
-By default this creates the application **/proposals** under **Default Web Site**, so the wizard is at `https://<server>/proposals/`. The script:
+By default this creates the application **/proposals** under **Default Web Site**, so staff open the wizard at `http://<server>/proposals/`. The script:
 - creates `.venv` and installs the Python packages;
 - writes `web.config`;
 - creates the app pool `BDOProposals` (No Managed Code, always running);
@@ -42,18 +44,13 @@ By default this creates the application **/proposals** under **Default Web Site*
 
 Other options:
 - **A different site or path:** `-SiteName "Intranet" -AppName "fees"`
-- **A separate site on its own port:** `-NewSiteName "BDO Proposals" -Port 8443`. The app is then at the site root, and you add the HTTPS binding and certificate in IIS Manager.
+- **A separate site on its own port:** `-NewSiteName "BDO Proposals" -Port 8080`. The app is then at the site root, e.g. `http://<server>:8080/`.
 - **Python or LibreOffice in unusual folders:** `-PythonExe "C:\Python312\python.exe" -SofficePath "D:\LibreOffice\program\soffice.exe"`
 
 It is safe to run the script again: after an update, or to change these settings.
 
-## 4. HTTPS and access
-- **HTTPS:** add an HTTPS binding with your certificate to the site in IIS Manager. `-PublicBaseUrl` must match the address clients use, because it goes into the links and the signing button sent to them.
-- **Client access:** clients sign through `<PublicBaseUrl>/p/...` and `<PublicBaseUrl>/api/proposals/<id>/sign`. Both must be reachable from outside BDO if you send proposals to external clients.
-- **Restricting staff pages:** the wizard (`/`) and **Admin** (`/admin`) have no login of their own. To restrict them to BDO staff, either publish only the client paths externally (`/p/` and `/api/proposals/*/sign`), or enable *Windows Authentication* on the application and allow anonymous access only to those two paths, using `<location>` rules in IIS.
-
-## 5. Signing certificate
-Copy BDO's signing certificate to `data\signing.p12`. Then re-run the setup script with `-P12Password "..."`, or set `BDO_SIGNING_P12_PASSWORD` in `web.config`. Until you do this, a self-signed development certificate is used.
+## 4. Access
+Admin (`/admin`) has no separate login: every employee who can open the app can edit the list of services. HTTPS is optional on the LAN. If you want it, add an HTTPS binding to the site in IIS Manager.
 
 ## Updating
 To update to the latest code, run these commands in the app folder:
@@ -70,14 +67,14 @@ git pull
 Restart-WebAppPool BDOProposals
 ```
 
-Your data is not touched by `git pull`: the `output`, `data` and `logs` folders and `web.config` aren't in git. **Admin edits** (`assets/services/services.json`) and **uploaded bios** (`assets/team/`) are tracked by git, though. If they were changed on the server, commit them before pulling, or git may refuse to update.
+Your data is not touched by `git pull`: the `output` and `logs` folders and `web.config` aren't in git. **Admin edits** (`assets/services/services.json`) and **uploaded bios** (`assets/team/`) are tracked by git, though. If they were changed on the server, commit them before pulling, or git may refuse to update.
 
 ## Where things are
 | Path | Contents |
 |---|---|
-| `web.config` | IIS settings, generated by the setup script. Edit the `environmentVariable` values here, e.g. `PUBLIC_BASE_URL`. |
+| `web.config` | IIS settings, generated by the setup script. Edit the `environmentVariable` values here, e.g. `SOFFICE_PATH`. |
 | `logs\python_*.log` | The app's output and errors |
-| `output\` | Generated proposals and signed PDFs (`output\<id>\signed\`) |
+| `output\` | Generated proposals (PPTX, PDF, HTML), one folder per proposal |
 | `assets\services\services.json` | Service catalog (Admin) |
 | `assets\team\` | Bio slides |
 
@@ -89,4 +86,3 @@ Your data is not touched by `git pull`: the `output`, `data` and `logs` folders 
 | **502.3 / 502.5** or the page hangs | Look in `logs\python_*.log`. The usual causes: Python installed *for one user only*; packages missing (re-run the setup script); a Python error shown in the log |
 | PDF fails, but PPTX and HTML work | Check that `SOFFICE_PATH` in `web.config` points to `soffice.exe`, and that the app pool has `loadUserProfile = True` (the setup script sets this) |
 | Admin "Save" or bio upload fails | The app pool needs **Modify** rights on `assets\services` and `assets\team` (the setup script grants this) |
-| Links or the signing button point to the wrong address | Fix `PUBLIC_BASE_URL` in `web.config`, then recycle the app pool. Proposals generated before the fix keep the old address. |

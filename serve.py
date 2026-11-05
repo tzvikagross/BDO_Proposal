@@ -6,8 +6,6 @@ request to it on the port it passes in HTTP_PLATFORM_PORT.
 Environment variables:
   HTTP_PLATFORM_PORT / PORT  port to listen on (IIS sets HTTP_PLATFORM_PORT)        default 5000
   URL_PREFIX                 sub-path when the app is an IIS application, e.g. /proposals
-  PUBLIC_BASE_URL            public address used in links sent to clients, e.g. https://server/proposals
-  BEHIND_PROXY               1 = trust X-Forwarded-* headers from IIS
   SOFFICE_PATH               full path to LibreOffice soffice.exe (for PDF output)
 """
 import logging

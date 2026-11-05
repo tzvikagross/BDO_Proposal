@@ -7,12 +7,6 @@
     "phone": "054-5227841",
     "email": "TzvikaG@bdo.co.il"
   },
-  "public_base_url": "http://localhost:5000",
-  "signing": {
-    "_comment": "PKCS#12 certificate used to digitally sign accepted proposals (PAdES). If the file is missing, a self-signed development certificate is generated in data/dev_signing.p12 — replace it with BDO's real certificate for production.",
-    "p12_path": "data/signing.p12",
-    "p12_password_env": "BDO_SIGNING_P12_PASSWORD"
-  },
   "footnotes": {
     "default": [
       "*** Prices above do not include VAT as applicable by law",

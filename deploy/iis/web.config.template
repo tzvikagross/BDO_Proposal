@@ -23,13 +23,8 @@
       <environmentVariables>
         <!-- sub-path of the IIS application, e.g. /proposals (empty when the app is a whole site) -->
         <environmentVariable name="URL_PREFIX" value="{{URL_PREFIX}}" />
-        <!-- public address put in the links sent to clients (online proposal + signing) -->
-        <environmentVariable name="PUBLIC_BASE_URL" value="{{PUBLIC_BASE_URL}}" />
-        <environmentVariable name="BEHIND_PROXY" value="1" />
         <!-- LibreOffice, for PDF output -->
         <environmentVariable name="SOFFICE_PATH" value="{{SOFFICE_PATH}}" />
-        <!-- password of data\signing.p12 (BDO's signing certificate), if you install one -->
-        <environmentVariable name="BDO_SIGNING_P12_PASSWORD" value="{{P12_PASSWORD}}" />
         <environmentVariable name="PYTHONUNBUFFERED" value="1" />
         <environmentVariable name="PYTHONIOENCODING" value="utf-8" />
       </environmentVariables>

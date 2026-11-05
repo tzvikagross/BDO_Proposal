@@ -3,6 +3,8 @@
     pip install -r requirements.txt
     python app.py            # development server, http://localhost:5000
     python serve.py          # production server (waitress) – used by IIS, see deploy/iis
+
+Clients sign the emailed HTML proposal in their own browser; the server is only used by staff.
 """
 from __future__ import annotations
 
@@ -18,26 +20,9 @@ from proposal.html_gen import generate_html, render_html
 from proposal.model import OUTPUT_DIR, ROOT, catalog, normalise, safe_filename, settings
 from proposal.pdf_convert import pptx_to_pdf
 from proposal.pptx_gen import generate_pptx
-from proposal.sign import create_signed_acceptance
 
 app = Flask(__name__, template_folder=str(ROOT / "templates"), static_folder=str(ROOT / "static"))
 app.config["MAX_CONTENT_LENGTH"] = 25 * 1024 * 1024   # bio slides can be a few MB
-
-if os.environ.get("BEHIND_PROXY"):
-    # IIS / reverse proxy in front: trust its X-Forwarded-* headers for the client IP, scheme and host
-    from werkzeug.middleware.proxy_fix import ProxyFix
-    app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1)
-
-
-def abs_url(endpoint: str, **values) -> str:
-    """Absolute URL for links that leave the app (online proposal, signing endpoint).
-    Uses PUBLIC_BASE_URL (e.g. https://server/proposals) when set."""
-    public = os.environ.get("PUBLIC_BASE_URL", "").rstrip("/")
-    if public:
-        path = url_for(endpoint, **values)[len(request.script_root):]
-        return public + path
-    return url_for(endpoint, _external=True, **values)
-
 
 @app.context_processor
 def inject_base():
@@ -56,16 +41,6 @@ def proposal_dir(pid: str) -> Path:
 
 def load_proposal(pid: str) -> dict:
     return json.loads((proposal_dir(pid) / "proposal.json").read_text(encoding="utf-8"))
-
-
-@app.after_request
-def cors(resp):
-    # the HTML proposal may be opened from e-mail / file:// and posts its signature here
-    if request.path.startswith("/api/proposals/") and request.path.endswith("/sign"):
-        resp.headers["Access-Control-Allow-Origin"] = "*"
-        resp.headers["Access-Control-Allow-Methods"] = "POST, OPTIONS"
-        resp.headers["Access-Control-Allow-Headers"] = "Content-Type"
-    return resp
 
 
 @app.get("/")
@@ -177,11 +152,10 @@ def api_create():
             except Exception as e:  # LibreOffice missing / failed
                 errors["pdf"] = str(e)
     if "html" in formats:
-        sign_url = abs_url("api_sign", pid=p["id"])
-        files["html"] = generate_html(p, d / f"{stem}.html", sign_url).name
+        files["html"] = generate_html(p, d / f"{stem}.html").name
     links = {k: url_for("download", pid=p["id"], name=v) for k, v in files.items()}
     if "html" in formats:
-        links["online"] = abs_url("online", pid=p["id"])
+        links["online"] = url_for("online", pid=p["id"])   # preview for staff on the LAN
     return jsonify({"id": p["id"], "files": links, "errors": errors})
 
 
@@ -193,29 +167,7 @@ def download(pid, name):
 @app.get("/p/<pid>")
 def online(pid):
     p = load_proposal(pid)
-    return Response(render_html(p, abs_url("api_sign", pid=pid)), mimetype="text/html")
-
-
-@app.route("/api/proposals/<pid>/sign", methods=["POST", "OPTIONS"])
-def api_sign(pid):
-    if request.method == "OPTIONS":
-        return ("", 204)
-    p = load_proposal(pid)
-    s = request.get_json(force=True, silent=True) or {}
-    signer = {k: str(s.get(k, ""))[:200] for k in ("name", "title", "date")}
-    signer["signature"] = str(s.get("signature", ""))
-    if not signer["name"] or not signer["signature"].startswith("data:image/png;base64,"):
-        return "Name and signature are required", 400
-    if len(signer["signature"]) > 2_000_000:
-        return "Signature image too large", 400
-    ip = request.remote_addr or ""
-    pdf = create_signed_acceptance(p, signer, ip=ip, user_agent=request.headers.get("User-Agent", ""))
-    out = proposal_dir(pid) / "signed"
-    out.mkdir(exist_ok=True)
-    name = safe_filename(f"{p['client']['company']}_Signed_Proposal_{signer['date'] or 'undated'}") + ".pdf"
-    (out / name).write_bytes(pdf)
-    (out / (name[:-4] + ".json")).write_text(json.dumps({k: v for k, v in signer.items() if k != "signature"} | {"ip": ip}))
-    return Response(pdf, mimetype="application/pdf", headers={"Content-Disposition": f'attachment; filename="{name}"'})
+    return Response(render_html(p), mimetype="text/html")
 
 
 @app.get("/proposals")
@@ -223,10 +175,10 @@ def list_proposals():
     rows = []
     for d in sorted(OUTPUT_DIR.glob("*/proposal.json"), reverse=True):
         p = json.loads(d.read_text(encoding="utf-8"))
-        signed = sorted((d.parent / "signed").glob("*.pdf")) if (d.parent / "signed").exists() else []
+        files = {f.suffix[1:]: url_for("download", pid=p["id"], name=f.name)
+                 for f in sorted(d.parent.iterdir()) if f.suffix in (".pptx", ".pdf", ".html")}
         rows.append({"id": p["id"], "company": p["client"]["company"], "title": p["client"]["title"],
-                     "date": p["client"]["date"], "online": url_for("online", pid=p["id"]),
-                     "signed": [url_for("download", pid=p["id"], name=f"signed/{f.name}") for f in signed]})
+                     "date": p["client"]["date"], "online": url_for("online", pid=p["id"]), "files": files})
     return jsonify(rows)
 
 
