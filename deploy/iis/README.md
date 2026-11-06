@@ -52,6 +52,42 @@ It is safe to run the script again: after an update, or to change these settings
 ## 4. Access
 Admin (`/admin`) has no separate login: every employee who can open the app can edit the list of services. HTTPS is optional on the LAN. If you want it, add an HTTPS binding to the site in IIS Manager.
 
+## Server without internet
+The setup script normally downloads the Python packages from the internet. If the server can't do that, download them on another computer (a Mac is fine) and copy them over.
+
+**Don't copy installed packages from a Mac.** lxml, Pillow and pypdfium2 contain compiled code built for macOS, which Windows can't load. Instead, ask pip for the **Windows** versions that match the server's Python.
+
+**1. On the Mac**, in the project folder, download the Windows packages for Python 3.14 into a `wheels` folder (about 18 MB). Change `3.14` if the server has a different Python version.
+
+```bash
+python3 -m pip install --upgrade pip
+```
+
+```bash
+python3 -m pip download -r requirements.txt --platform win_amd64 --python-version 3.14 --implementation cp --only-binary=:all: -d wheels
+```
+
+**2. Copy** the whole project folder, including `wheels`, to the server, e.g. `C:\inetpub\wwwroot\BDO_Proposal`.
+
+**3. On the server**, run the setup script as usual. When the app folder contains a `wheels` folder, the script installs from it offline and never contacts the internet. You can also point it at another folder with `-WheelsDir "D:\wheels"`.
+
+**After an update** that changes `requirements.txt`, download the `wheels` folder again on the Mac and copy it over before re-running the script.
+
+### Installers to bring with you
+Download these on the Mac and copy them to the server. All of them install offline:
+- HttpPlatformHandler (x64): https://www.iis.net/downloads/microsoft/httpplatformhandler
+- Python for Windows, *Windows installer (64-bit)*: https://www.python.org/downloads/windows/. Use the same version you used for the wheels.
+- LibreOffice for Windows (x86_64): https://www.libreoffice.org/download/download-libreoffice/
+
+### Python works in PowerShell but not in Command Prompt
+This usually means Python was installed **for one user only**, or the `python` command in Command Prompt is the Microsoft Store shortcut. To check where Python is installed, run this in PowerShell:
+
+```bash
+(Get-Command python).Source
+```
+
+If the path is under `C:\Users\...\AppData\...`, Python is installed only for your user, and **IIS won't be able to run it**. Reinstall it: run the installer, choose *Customize installation*, then tick **Install Python for all users**. It then goes to `C:\Program Files\Python314\`. Use PowerShell for all the steps in this guide; Command Prompt isn't needed.
+
 ## Updating
 To update to the latest code, run these commands in the app folder:
 
@@ -83,6 +119,7 @@ Your data is not touched by `git pull`: the `output` and `logs` folders and `web
 |---|---|
 | **500.19** "configuration section cannot be used at this path" | Run `%windir%\system32\inetsrv\appcmd.exe unlock config -section:system.webServer/handlers` (the setup script does this) |
 | **500.19** "unrecognized element httpPlatform" | HttpPlatformHandler isn't installed. Install it and run `iisreset`. |
+| Setup script: "Offline install failed" | The `wheels` folder holds packages for a different Python version or for Mac. Download them again with `--platform win_amd64 --python-version <server version>` (see *Server without internet*) |
 | **502.3 / 502.5** or the page hangs | Look in `logs\python_*.log`. The usual causes: Python installed *for one user only*; packages missing (re-run the setup script); a Python error shown in the log |
 | PDF fails, but PPTX and HTML work | Check that `SOFFICE_PATH` in `web.config` points to `soffice.exe`, and that the app pool has `loadUserProfile = True` (the setup script sets this) |
 | Admin "Save" or bio upload fails | The app pool needs **Modify** rights on `assets\services` and `assets\team` (the setup script grants this) |

@@ -26,6 +26,9 @@
   HTTP port for -NewSiteName (default 8080). Add an HTTPS binding afterwards in IIS Manager.
 .PARAMETER PythonExe
   Python 3.10+ installed for all users. Default: found with the "py" launcher.
+.PARAMETER WheelsDir
+  Folder with the downloaded Python packages (.whl files) for a server without internet access.
+  Default: the "wheels" folder in the app folder, if it exists. See deploy\iis\README.md, "Server without internet".
 .PARAMETER SofficePath
   LibreOffice soffice.exe (for PDF). Default: C:\Program Files\LibreOffice\program\soffice.exe if present.
 #>
@@ -37,7 +40,8 @@ param(
   [int]$Port = 8080,
   [string]$AppPoolName = "BDOProposals",
   [string]$PythonExe = "",
-  [string]$SofficePath = ""
+  [string]$SofficePath = "",
+  [string]$WheelsDir = ""
 )
 
 $ErrorActionPreference = "Stop"
@@ -88,9 +92,20 @@ else { Write-Warning "LibreOffice not found – PDF output will be unavailable (
 Step "Creating the Python environment (.venv) and installing packages"
 $venvPy = Join-Path $AppDir ".venv\Scripts\python.exe"
 if (-not (Test-Path $venvPy)) { & $PythonExe -m venv (Join-Path $AppDir ".venv") }
-& $venvPy -m pip install --upgrade pip --quiet
-& $venvPy -m pip install -r (Join-Path $AppDir "requirements.txt") --quiet
-if ($LASTEXITCODE -ne 0) { Fail "pip install failed." }
+if (-not $WheelsDir -and (Test-Path (Join-Path $AppDir "wheels"))) { $WheelsDir = Join-Path $AppDir "wheels" }
+$req = Join-Path $AppDir "requirements.txt"
+if ($WheelsDir) {
+  # offline: install only from the downloaded .whl files, never from the internet
+  Write-Host "Installing packages offline from $WheelsDir"
+  & $venvPy -m pip install --no-index --find-links $WheelsDir -r $req --quiet
+  if ($LASTEXITCODE -ne 0) {
+    Fail "Offline install failed. The wheels folder must hold Windows (win_amd64) packages for Python $ver – see 'Server without internet' in deploy\iis\README.md."
+  }
+} else {
+  & $venvPy -m pip install --upgrade pip --quiet
+  & $venvPy -m pip install -r $req --quiet
+  if ($LASTEXITCODE -ne 0) { Fail "pip install failed. If this server has no internet access, use -WheelsDir (see deploy\iis\README.md)." }
+}
 Push-Location $AppDir; & $venvPy -c "import app; print('App imports OK')"; Pop-Location
 
 foreach ($d in @("output", "logs", "assets\services\history")) {

@@ -1,5 +1,6 @@
 flask>=3.0
 waitress>=3.0     # production server (IIS / Windows)
+colorama>=0.4     # needed by Flask on Windows; listed so offline downloads include it
 python-pptx>=1.0
 lxml>=5.0
 pypdfium2>=4.0   # only for scripts/build_assets.py
