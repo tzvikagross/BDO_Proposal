@@ -31,7 +31,7 @@ python app.py                # open http://localhost:5000
 PDF export needs [LibreOffice](https://www.libreoffice.org/). If `soffice` isn't on your PATH, set `SOFFICE_PATH`.
 
 ## Running on IIS (Windows server)
-IIS runs the Python app for you, using Microsoft's HttpPlatformHandler module. Opening the site, or an application such as `http://server/proposals/`, shows the wizard to staff on the LAN. A setup script installs everything:
+IIS runs the Python app for you, using Microsoft's HttpPlatformHandler module. By default it runs as its own IIS site called **Proposal**; opening the site's address shows the wizard to staff on the LAN. A setup script installs everything:
 
 ```bash
 powershell -ExecutionPolicy Bypass -File .\deploy\iis\setup-iis.ps1

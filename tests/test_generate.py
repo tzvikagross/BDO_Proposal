@@ -202,3 +202,15 @@ def test_links_under_sub_path(tmp_path, monkeypatch):
     j = r.get_json()
     assert j["files"]["html"].startswith("/proposals/proposals/")
     assert j["files"]["online"] == f"/proposals/p/{j['id']}"
+
+
+def test_iis_setup_script_is_plain_ascii():
+    """Windows PowerShell 5.1 misreads non-ASCII characters in a script (e.g. an en dash)
+    and then reports parser errors, so the setup script must stay plain ASCII."""
+    root = Path(__file__).resolve().parent.parent / "deploy" / "iis"
+    for name in ("setup-iis.ps1", "web.config.template"):
+        data = (root / name).read_bytes()
+        if data.startswith(b"\xef\xbb\xbf"):
+            data = data[3:]
+        bad = [i for i, ch in enumerate(data) if ch > 127]
+        assert not bad, f"{name} has non-ASCII characters at byte {bad[0]}"

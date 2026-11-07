@@ -20,31 +20,34 @@ The server only needs to be reachable by **staff on the LAN**. Clients never con
 | **LibreOffice** | https://www.libreoffice.org/download/ | Only needed for **PDF** output |
 | Git (optional) | https://git-scm.com/download/win | For cloning and updating. You can also copy the folder over instead. |
 
-## 2. Put the app on the server
-For example, into `C:\inetpub\BDO_Proposal`:
+## 2. Put the app on the server and create the site
+1. Copy the app into a folder, e.g. `C:\inetpub\wwwroot\Proposal`. If the server has no internet access, also add the `wheels` folder (see *Server without internet*).
+2. In IIS Manager, create a site called **Proposal** pointing to that folder, with an application pool also called **Proposal**. Add your bindings, e.g. HTTPS with your certificate.
 
-```bash
-git clone https://github.com/tzvikagross/BDO_Proposal.git C:\inetpub\BDO_Proposal
-```
+If you skip step 2, the setup script creates the site for you, on HTTP port 8080.
 
 ## 3. Run the setup script
 Open **Windows PowerShell as Administrator**, go to the app folder and run the script:
 
 ```bash
-cd C:\inetpub\BDO_Proposal
+cd C:\inetpub\wwwroot\Proposal
+```
+
+```bash
 powershell -ExecutionPolicy Bypass -File .\deploy\iis\setup-iis.ps1
 ```
 
-By default this creates the application **/proposals** under **Default Web Site**, so staff open the wizard at `http://<server>/proposals/`. The script:
-- creates `.venv` and installs the Python packages;
+By default the app runs as the site **Proposal**, with the app pool **Proposal**, at the root of the site (e.g. `https://proposal.yourdomain/`). If the site already exists, the script uses it as it is and doesn't change its bindings or certificate. The script:
+- creates `.venv` and installs the Python packages (offline from `wheels`, if present);
 - writes `web.config`;
-- creates the app pool `BDOProposals` (No Managed Code, always running);
-- gives that app pool access to the app folder;
-- creates the IIS application and tests it.
+- sets the app pool to *No Managed Code* and *always running*;
+- gives the app pool access to the app folder;
+- points the site at the app folder;
+- opens the site once to check it works.
 
 Other options:
-- **A different site or path:** `-SiteName "Intranet" -AppName "fees"`
-- **A separate site on its own port:** `-NewSiteName "BDO Proposals" -Port 8080`. The app is then at the site root, e.g. `http://<server>:8080/`.
+- **Different site or app pool names:** `-SiteName "BDO Fees" -AppPoolName "BDOFees"`
+- **As a sub-folder of another site instead of its own site:** `-SiteName "Default Web Site" -AppName "proposals"` gives `http://<server>/proposals/`
 - **Python or LibreOffice in unusual folders:** `-PythonExe "C:\Python312\python.exe" -SofficePath "D:\LibreOffice\program\soffice.exe"`
 
 It is safe to run the script again: after an update, or to change these settings.
@@ -100,7 +103,7 @@ git pull
 ```
 
 ```bash
-Restart-WebAppPool BDOProposals
+Restart-WebAppPool Proposal
 ```
 
 Your data is not touched by `git pull`: the `output` and `logs` folders and `web.config` aren't in git. **Admin edits** (`assets/services/services.json`) and **uploaded bios** (`assets/team/`) are tracked by git, though. If they were changed on the server, commit them before pulling, or git may refuse to update.
@@ -119,6 +122,7 @@ Your data is not touched by `git pull`: the `output` and `logs` folders and `web
 |---|---|
 | **500.19** "configuration section cannot be used at this path" | Run `%windir%\system32\inetsrv\appcmd.exe unlock config -section:system.webServer/handlers` (the setup script does this) |
 | **500.19** "unrecognized element httpPlatform" | HttpPlatformHandler isn't installed. Install it and run `iisreset`. |
+| Setup script: "Missing argument in parameter list" or another parser error | The script was saved with special characters by an editor. Use the copy from GitHub; it is plain ASCII. Run it with `powershell -ExecutionPolicy Bypass -File ...` |
 | Setup script: "Offline install failed" | The `wheels` folder holds packages for a different Python version or for Mac. Download them again with `--platform win_amd64 --python-version <server version>` (see *Server without internet*) |
 | **502.3 / 502.5** or the page hangs | Look in `logs\python_*.log`. The usual causes: Python installed *for one user only*; packages missing (re-run the setup script); a Python error shown in the log |
 | PDF fails, but PPTX and HTML work | Check that `SOFFICE_PATH` in `web.config` points to `soffice.exe`, and that the app pool has `loadUserProfile = True` (the setup script sets this) |
