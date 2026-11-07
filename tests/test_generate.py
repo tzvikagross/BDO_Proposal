@@ -214,3 +214,33 @@ def test_iis_setup_script_is_plain_ascii():
             data = data[3:]
         bad = [i for i, ch in enumerate(data) if ch > 127]
         assert not bad, f"{name} has non-ASCII characters at byte {bad[0]}"
+
+
+# ---------------------------------------------------------------- Windows-safe file handling & API errors
+def test_fix_content_types_closes_temp_file(tmp_path):
+    """On Windows an open handle stops the temp file from being renamed/deleted:
+    the post-processing step must not leave any file handle or temp file behind."""
+    import os
+    from proposal.pptx_gen import _fix_content_types
+    out = generate_pptx(normalise(default_proposal("payroll")), tmp_path / "a.pptx")
+    fds = set(os.listdir("/proc/self/fd")) if os.path.isdir("/proc/self/fd") else None
+    _fix_content_types(out)
+    if fds is not None:
+        assert set(os.listdir("/proc/self/fd")) <= fds
+    assert sorted(p.name for p in tmp_path.iterdir()) == ["a.pptx"]
+
+
+def test_api_errors_are_json(tmp_path, monkeypatch):
+    import app as appmod
+    import proposal.model as model
+    monkeypatch.setattr(appmod, "OUTPUT_DIR", tmp_path)
+    monkeypatch.setattr(model, "OUTPUT_DIR", tmp_path)
+
+    def boom(*a, **k):
+        raise PermissionError("file in use")
+    monkeypatch.setattr(appmod, "generate_pptx", boom)
+    c = app.test_client()
+    r = c.post("/api/proposals", json={"proposal": default_proposal("payroll"), "formats": ["pptx"]})
+    assert r.status_code == 500 and r.is_json
+    assert "PermissionError" in r.get_json()["error"]
+    assert c.get("/api/nope").is_json

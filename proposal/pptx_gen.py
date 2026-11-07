@@ -406,17 +406,25 @@ def generate_pptx(proposal: dict, out_path: Path, template: Path = TEMPLATE_PPTX
 def _fix_content_types(path: Path):
     """python-pptx re-declares the template's .jpg parts as 'image/jpg' (non-standard);
     rewrite them as 'image/jpeg' so strict validators and PowerPoint agree."""
-    import shutil
+    import os
     import tempfile
     import zipfile
 
-    tmp = Path(tempfile.mkstemp(suffix=".pptx", dir=path.parent)[1])
-    with zipfile.ZipFile(path) as zin, zipfile.ZipFile(tmp, "w", zipfile.ZIP_DEFLATED) as zout:
-        for info in zin.infolist():
-            data = zin.read(info.filename)
-            if info.filename == "[Content_Types].xml":
-                data = data.replace(b'ContentType="image/jpg"', b'ContentType="image/jpeg"')
-                if b'Default Extension="jpg"' not in data:
-                    data = data.replace(b"<Default ", b'<Default Extension="jpg" ContentType="image/jpeg"/><Default ', 1)
-            zout.writestr(info, data)
-    shutil.move(tmp, path)
+    # Close the temp file's handle before writing and replacing it: Windows cannot
+    # rename or delete a file that is still open.
+    fd, tmp_name = tempfile.mkstemp(suffix=".pptx", dir=path.parent)
+    os.close(fd)
+    tmp = Path(tmp_name)
+    try:
+        with zipfile.ZipFile(path) as zin, zipfile.ZipFile(tmp, "w", zipfile.ZIP_DEFLATED) as zout:
+            for info in zin.infolist():
+                data = zin.read(info.filename)
+                if info.filename == "[Content_Types].xml":
+                    data = data.replace(b'ContentType="image/jpg"', b'ContentType="image/jpeg"')
+                    if b'Default Extension="jpg"' not in data:
+                        data = data.replace(b"<Default ", b'<Default Extension="jpg" ContentType="image/jpeg"/><Default ', 1)
+                zout.writestr(info, data)
+        os.replace(tmp, path)          # overwrites the original; works on Windows too
+    except BaseException:
+        tmp.unlink(missing_ok=True)
+        raise

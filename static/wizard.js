@@ -2,8 +2,14 @@
   const $ = (s, el = document) => el.querySelector(s);
   const $$ = (s, el = document) => [...el.querySelectorAll(s)];
   const BASE = window.APP_BASE || '';   // set when the app runs under a sub-path (IIS application)
+  // read a JSON reply; if the server sent something else (e.g. an error page), say so clearly
+  async function readJson(r) {
+    const text = await r.text();
+    try { return JSON.parse(text); }
+    catch (e) { throw new Error(`The server returned an unexpected reply (HTTP ${r.status}). Details are in the logs folder on the server.`); }
+  }
   const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
-  const CAT = await (await fetch(BASE + '/api/catalog')).json();
+  const CAT = await readJson(await fetch(BASE + '/api/catalog'));
   let clientType = 'accounting';
   let titleTouched = false;
 
@@ -209,7 +215,7 @@
     res.innerHTML = '';
     try {
       const r = await fetch(BASE + '/api/proposals', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ proposal: collect(), formats }) });
-      const j = await r.json();
+      const j = await readJson(r);
       if (!r.ok) throw new Error(j.error || r.statusText);
       const label = { pptx: 'Download PowerPoint', pdf: 'Download PDF', html: 'Download HTML file (to email)', online: 'Preview HTML ↗' };
       res.innerHTML = `<div class="ok"><b>Proposal ready.</b> Reference ${esc(j.id)}<br>
@@ -224,7 +230,7 @@
   // ---------- history
   $('#historyLink').addEventListener('click', async e => {
     e.preventDefault();
-    const rows = await (await fetch(BASE + '/proposals')).json();
+    const rows = await readJson(await fetch(BASE + '/proposals'));
     $('#histTable').innerHTML = '<tr><th>Date</th><th>Client</th><th>Services</th><th>Files</th><th></th></tr>' + (rows.map(r =>
       `<tr><td>${esc(r.date)}</td><td>${esc(r.company)}</td><td>${esc(r.title)}</td>
         <td>${Object.entries(r.files || {}).map(([k, u]) => `<a href="${esc(u)}">${k.toUpperCase()}</a>`).join(' · ') || '—'}</td>
@@ -253,7 +259,7 @@
   async function loadBios(selectId) {
     const prev = new Set($$('input[name=bio]:checked').map(c => c.value));
     const first = !$$('input[name=bio]').length;
-    const bios = await (await fetch(BASE + '/api/team')).json();
+    const bios = await readJson(await fetch(BASE + '/api/team'));
     $('#bios').innerHTML = bios.map(b => bioCard(b, first ? b.default : (prev.has(b.id) || b.id === selectId))).join('')
       || '<p class="hint">No bios yet – add one with “Add a bio”.</p>';
     countBios();
@@ -272,7 +278,7 @@
     const fd = new FormData(); fd.append('file', f);
     try {
       const r = await fetch(BASE + '/api/team', { method: 'POST', body: fd });
-      const j = await r.json();
+      const j = await readJson(r);
       if (!r.ok) throw new Error(j.error || r.statusText);
       await loadBios(j.id);
       msg.className = 'bio-msg ok';

@@ -24,6 +24,21 @@ from proposal.pptx_gen import generate_pptx
 app = Flask(__name__, template_folder=str(ROOT / "templates"), static_folder=str(ROOT / "static"))
 app.config["MAX_CONTENT_LENGTH"] = 25 * 1024 * 1024   # bio slides can be a few MB
 
+@app.errorhandler(Exception)
+def api_error(e):
+    """API calls always answer in JSON, so the wizard can show the real problem
+    instead of failing to read an HTML error page."""
+    from werkzeug.exceptions import HTTPException
+    if isinstance(e, HTTPException):
+        if not request.path.startswith("/api/"):
+            return e
+        return jsonify({"error": f"{e.code} {e.name}: {e.description}"}), e.code
+    app.logger.exception("Error while handling %s %s", request.method, request.path)
+    if not request.path.startswith("/api/"):
+        return "Internal server error – see the logs folder on the server.", 500
+    return jsonify({"error": f"Server error: {type(e).__name__}: {e}. Details are in the logs folder on the server."}), 500
+
+
 @app.context_processor
 def inject_base():
     # the app may live under a sub-path (IIS application, e.g. /proposals); scripts prefix API calls with BASE

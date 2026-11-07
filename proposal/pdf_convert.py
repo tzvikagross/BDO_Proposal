@@ -34,8 +34,10 @@ def pptx_to_pdf(pptx: Path, out_dir: Path | None = None, timeout: int = 240) -> 
     pptx = Path(pptx).resolve()
     out_dir = Path(out_dir or pptx.parent).resolve()
     env = os.environ.copy()
-    env.setdefault("SAL_USE_VCLPLUGIN", "svp")
-    with tempfile.TemporaryDirectory(prefix="lo_profile_") as profile:
+    if os.name != "nt":                       # headless display backend; Linux/macOS only
+        env.setdefault("SAL_USE_VCLPLUGIN", "svp")
+    # ignore_cleanup_errors: on Windows LibreOffice can keep the profile folder locked briefly
+    with tempfile.TemporaryDirectory(prefix="lo_profile_", ignore_cleanup_errors=True) as profile:
         cmd = [soffice, f"-env:UserInstallation={Path(profile).as_uri()}", "--headless",
                "--convert-to", "pdf", "--outdir", str(out_dir), str(pptx)]
         res = subprocess.run(cmd, env=env, capture_output=True, text=True, timeout=timeout)
