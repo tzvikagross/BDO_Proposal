@@ -255,3 +255,17 @@ def test_generated_deck_is_left_to_right(tmp_path):
     z = zipfile.ZipFile(out)
     flags = sum(len(re.findall(rb'\brtl="1"|rtlCol="1"', z.read(n))) for n in z.namelist() if n.endswith(".xml"))
     assert flags == 0
+
+
+def test_fee_column_on_the_right(tmp_path):
+    """After switching to left-to-right, tables keep the template's layout: fees in the right column."""
+    req = default_proposal("accounting")
+    req["scope"] = {"employees": "5"}
+    prs = Presentation(str(generate_pptx(normalise(req), tmp_path / "f.pptx")))
+    tables = [sh.table for s in prs.slides for sh in s.shapes if sh.has_table]
+    fee_tables = [t for t in tables if t.rows[0].cells[-1].text.startswith(("Cost", "Hourly Cost"))]
+    assert fee_tables and len(fee_tables) == len(tables) - 1          # all but the scope table
+    for t in fee_tables:
+        assert t.columns[-1].width < t.columns[0].width                 # narrow fee column last
+    scope = next(t for t in tables if t not in fee_tables)
+    assert scope.rows[1].cells[0].text == "Number of employees" and scope.rows[1].cells[-1].text == "5"

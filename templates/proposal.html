@@ -44,7 +44,7 @@ p{margin:0 0 10px}
 .svc-section>h2{border-left:0;margin-top:8px}
 table.fees{width:100%;border-collapse:separate;border-spacing:0 2px;font-size:14px;margin:10px 0 18px}
 table.fees th{background:var(--slate);color:#fff;text-align:left;padding:8px 12px;font-weight:bold}
-table.fees th:first-child{text-align:center;width:28%}
+table.fees th:last-child{text-align:center;width:28%}
 table.fees td{background:var(--band);padding:8px 12px;vertical-align:middle}
 table.fees td.fee{text-align:center;white-space:pre-line;font-weight:bold}
 table.fees td.fee small{display:block;font-weight:normal;color:var(--muted)}
@@ -169,8 +169,8 @@ footer{border-top:1px solid var(--line);color:var(--muted);font-size:12px;paddin
   {% if p.scope %}
   <div class="svc-section" id="sec-scope">
     <h2>Scope of operations</h2>
-    <table class="fees scope"><tr><th>Value</th><th>Scope of operations</th></tr>
-      {% for r in p.scope %}<tr><td class="fee">{{ r.value }}</td><td>{{ r.label }}</td></tr>{% endfor %}
+    <table class="fees scope"><tr><th>Scope of operations</th><th>Value</th></tr>
+      {% for r in p.scope %}<tr><td>{{ r.label }}</td><td class="fee">{{ r.value }}</td></tr>{% endfor %}
     </table>
   </div>
   {% endif %}
@@ -179,13 +179,13 @@ footer{border-top:1px solid var(--line);color:var(--muted);font-size:12px;paddin
     <h2>{{ s.title or 'Services' }}</h2>
     {% for g in s.groups %}
     <table class="fees">
-      <tr><th>{{ g.fee_header }}</th><th>{{ g.title }}</th></tr>
+      <tr><th>{{ g.title }}</th><th>{{ g.fee_header }}</th></tr>
       {% for r in g.rows %}
         {% if r.type == 'subheader' %}
-        <tr class="subh"><td class="fee">{{ r.note }}</td><td>{{ r.text }}</td></tr>
+        <tr class="subh"><td>{{ r.text }}</td><td class="fee">{{ r.note }}</td></tr>
         {% else %}
-        <tr><td class="fee">{{ r.fee_display }}{% if r.unit %}<small>{{ r.unit }}</small>{% endif %}</td>
-            <td>{% if g.bullets and r.description|length > 1 %}<ul>{% for d in r.description %}<li>{{ d }}</li>{% endfor %}</ul>{% else %}{{ r.description|join('<br>'|safe) }}{% endif %}</td></tr>
+        <tr><td>{% if g.bullets and r.description|length > 1 %}<ul>{% for d in r.description %}<li>{{ d }}</li>{% endfor %}</ul>{% else %}{{ r.description|join('<br>'|safe) }}{% endif %}</td>
+            <td class="fee">{{ r.fee_display }}{% if r.unit and r.unit != 'Included' %}<small>{{ r.unit }}</small>{% endif %}</td></tr>
         {% endif %}
       {% endfor %}
     </table>
@@ -387,7 +387,7 @@ const LOGO = {{ a.logo|tojson }};
       const fl=doc.splitTextToSize(fee||'',fw-4), dl=[].concat(...desc.map(d=>doc.splitTextToSize(d,dw-6)));
       const h=Math.max(fl.length,dl.length)*3.6+3; need(h+1);
       doc.setFillColor(...fill);doc.rect(M,y,CW,h,'F');doc.setTextColor(...(white?[255,255,255]:ink));
-      doc.text(fl,M+fw/2,y+4.6,{align:'center'});doc.text(dl,M+fw+3,y+4.6);y+=h+0.7}
+      doc.text(dl,M+3,y+4.6);doc.text(fl,M+dw+fw/2,y+4.6,{align:'center'});y+=h+0.7}
     PROPOSAL.sections.forEach(s=>{ if(s.title) text(s.title,9.5,{bold:true,after:1.5});
       s.groups.forEach(g=>{row(g.fee_header,[g.title],slate,true,true);
         g.rows.forEach(r=>{ if(r.type==='subheader') row(r.note||'',[r.text],sub,true);

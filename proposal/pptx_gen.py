@@ -372,9 +372,14 @@ def make_left_to_right(prs) -> int:
     The template was authored with right-to-left paragraph and table settings. With
     English text that makes LibreOffice (and PowerPoint) reorder words and numbers,
     e.g. '4,500 Annual' comes out as 'Annual 4,500' in the PDF. Removing the rtl flags
-    gives normal left-to-right paragraphs and tables (first column on the left).
+    gives normal left-to-right paragraphs and tables.
+
+    A right-to-left table shows its first column on the right (the fees, in the fee
+    tables). So that tables keep the layout they had in the template, the columns of
+    every table that loses its rtl flag are reversed.
     Returns the number of attributes changed."""
     changed = 0
+    to_mirror = []
     parts = list(prs.slides) + list(prs.slide_layouts) + list(prs.slide_masters)
     parts += [l for m in prs.slide_masters for l in m.slide_layouts]
     seen = set()
@@ -391,10 +396,42 @@ def make_left_to_right(prs) -> int:
             if node.get("rtl") == "1" and (local == "pPr" or local == "tblPr" or local.endswith("pPr")):
                 del node.attrib["rtl"]
                 changed += 1
+                if local == "tblPr":
+                    to_mirror.append(node.getparent())
             if local == "bodyPr" and node.get("rtlCol") == "1":
                 del node.attrib["rtlCol"]
                 changed += 1
+    for tbl in to_mirror:
+        mirror_table_columns(tbl)
     return changed
+
+
+def mirror_table_columns(tbl):
+    """Reverse the column order of an <a:tbl> (grid and every row), keeping merged cells
+    (gridSpan + hMerge) together so the table stays valid."""
+    grid = tbl.find(q("a:tblGrid"))
+    if grid is not None:
+        cols = grid.findall(q("a:gridCol"))
+        for c in cols:
+            grid.remove(c)
+        for c in reversed(cols):
+            grid.append(c)
+    for tr in tbl.findall(q("a:tr")):
+        cells = tr.findall(q("a:tc"))
+        groups, i = [], 0
+        while i < len(cells):
+            span = int(cells[i].get("gridSpan", "1") or 1)
+            groups.append(cells[i:i + span])
+            i += span
+        anchor = cells[-1].getnext() if cells else None   # e.g. the row's extLst stays last
+        for c in cells:
+            tr.remove(c)
+        for g in reversed(groups):
+            for c in g:
+                if anchor is not None:
+                    anchor.addprevious(c)
+                else:
+                    tr.append(c)
 
 
 def generate_pptx(proposal: dict, out_path: Path, template: Path = TEMPLATE_PPTX) -> Path:
