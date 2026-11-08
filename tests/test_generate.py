@@ -263,9 +263,10 @@ def test_fee_column_on_the_right(tmp_path):
     req["scope"] = {"employees": "5"}
     prs = Presentation(str(generate_pptx(normalise(req), tmp_path / "f.pptx")))
     tables = [sh.table for s in prs.slides for sh in s.shapes if sh.has_table]
-    fee_tables = [t for t in tables if t.rows[0].cells[-1].text.startswith(("Cost", "Hourly Cost"))]
+    last = lambda row: row.cells[len(row.cells) - 1]                    # python-pptx has no negative indexing
+    fee_tables = [t for t in tables if last(t.rows[0]).text.startswith(("Cost", "Hourly Cost"))]
     assert fee_tables and len(fee_tables) == len(tables) - 1          # all but the scope table
     for t in fee_tables:
-        assert t.columns[-1].width < t.columns[0].width                 # narrow fee column last
+        assert t.columns[len(t.columns) - 1].width < t.columns[0].width  # narrow fee column last
     scope = next(t for t in tables if t not in fee_tables)
-    assert scope.rows[1].cells[0].text == "Number of employees" and scope.rows[1].cells[-1].text == "5"
+    assert scope.rows[1].cells[0].text == "Number of employees" and last(scope.rows[1]).text == "5"
