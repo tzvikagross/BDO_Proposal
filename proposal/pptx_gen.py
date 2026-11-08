@@ -366,6 +366,37 @@ def _renumber_bio_slides(prs, bio_slides):
                         r.text = ""
 
 
+def make_left_to_right(prs) -> int:
+    """Switch every slide, layout and master to left-to-right text.
+
+    The template was authored with right-to-left paragraph and table settings. With
+    English text that makes LibreOffice (and PowerPoint) reorder words and numbers,
+    e.g. '4,500 Annual' comes out as 'Annual 4,500' in the PDF. Removing the rtl flags
+    gives normal left-to-right paragraphs and tables (first column on the left).
+    Returns the number of attributes changed."""
+    changed = 0
+    parts = list(prs.slides) + list(prs.slide_layouts) + list(prs.slide_masters)
+    parts += [l for m in prs.slide_masters for l in m.slide_layouts]
+    seen = set()
+    for part in parts:
+        el = part._element
+        if id(el) in seen:
+            continue
+        seen.add(id(el))
+        for node in el.iter():
+            tag = node.tag
+            if not isinstance(tag, str):
+                continue
+            local = tag.rsplit("}", 1)[-1]
+            if node.get("rtl") == "1" and (local == "pPr" or local == "tblPr" or local.endswith("pPr")):
+                del node.attrib["rtl"]
+                changed += 1
+            if local == "bodyPr" and node.get("rtlCol") == "1":
+                del node.attrib["rtlCol"]
+                changed += 1
+    return changed
+
+
 def generate_pptx(proposal: dict, out_path: Path, template: Path = TEMPLATE_PPTX) -> Path:
     prs = Presentation(str(template))
     slides = list(prs.slides)
@@ -395,6 +426,7 @@ def generate_pptx(proposal: dict, out_path: Path, template: Path = TEMPLATE_PPTX
     for i, s in enumerate(bio_slides):
         move_slide(prs, s, anchor + i)
     _renumber_bio_slides(prs, bio_slides)
+    make_left_to_right(prs)
 
     out_path = Path(out_path)
     out_path.parent.mkdir(parents=True, exist_ok=True)

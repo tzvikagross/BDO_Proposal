@@ -244,3 +244,14 @@ def test_api_errors_are_json(tmp_path, monkeypatch):
     assert r.status_code == 500 and r.is_json
     assert "PermissionError" in r.get_json()["error"]
     assert c.get("/api/nope").is_json
+
+
+def test_generated_deck_is_left_to_right(tmp_path):
+    """No right-to-left flags may remain, or the PDF shows '4,500 Annual' as 'Annual 4,500'."""
+    import re
+    req = default_proposal("accounting")
+    req["team"] = ["tzvika", "lea", "racheli", "tzippora"]
+    out = generate_pptx(normalise(req), tmp_path / "ltr.pptx")
+    z = zipfile.ZipFile(out)
+    flags = sum(len(re.findall(rb'\brtl="1"|rtlCol="1"', z.read(n))) for n in z.namelist() if n.endswith(".xml"))
+    assert flags == 0
