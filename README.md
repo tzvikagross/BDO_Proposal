@@ -51,7 +51,11 @@ It reads `PORT`, `URL_PREFIX` (e.g. `/proposals`) and `SOFFICE_PATH`.
 3. **Services & fees:** the segments for the chosen client type are switched on. Each service shows its default fee in the chosen currency, and its defaults in every currency are listed underneath. You can tick or untick services, change a fee (edited fees are highlighted and have a *reset* link), choose the fee unit from the drop-down, edit the wording, or add services and sub-headings. You can also switch the currency here; doing so resets all fees to that currency's defaults. Segments that aren't on by default for the client type are under *Other service segments*.
 4. **Generate:** pick the formats and download, or copy the online link to send to the client.
 
-*Previous proposals* lists everything generated so far, with links to any signed copies.
+**Previous proposals** lists every proposal with its **number**, date, client, contact, opportunity, services and files. The **search** box filters the table as you type; it matches any of these fields, and several words must all match. Each row has:
+- **Preview:** opens the HTML proposal.
+- **Edit:** opens a copy in the wizard, with the client details, team, scope, currency, and every service and fee as they were. Unticked services and your own added lines are included. Generating it creates a **new** proposal; the original is never changed.
+
+**Proposal numbers** look like `2026-0001` (year and running number). A revision made with Edit keeps the original number with a suffix: `2026-0001-R1`, `2026-0001-R2`, and so on. The number appears in the HTML proposal, in the client's signed PDF and in the file names.
 
 ## Engagement-team bios (`assets/team`)
 Each person is a **single-slide PowerPoint file**, `assets/team/<id>.pptx`, holding their bio slide exactly as it should appear in the deck. Next to it:

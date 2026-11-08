@@ -16,6 +16,7 @@ from flask import Flask, Response, abort, jsonify, render_template, request, sen
 
 from proposal.bios import BIO_DIR, add_bio_from_upload, list_bios
 from proposal import catalog as svc_catalog
+from proposal import registry
 from proposal.html_gen import generate_html, render_html
 from proposal.model import OUTPUT_DIR, ROOT, catalog, normalise, safe_filename, settings
 from proposal.pdf_convert import pptx_to_pdf
@@ -147,15 +148,24 @@ def team_file(bio_id, kind):
 def api_create():
     body = request.get_json(force=True, silent=True) or {}
     formats = [f for f in body.get("formats", ["pptx", "pdf", "html"]) if f in ("pptx", "pdf", "html")]
+    raw = body.get("proposal") or {}
     try:
-        p = normalise(body.get("proposal") or {})
+        p = normalise(raw)
     except ValueError as e:
         return jsonify({"error": str(e)}), 400
+    # "Edit" on a previous proposal: the result is a new proposal numbered as its revision
+    if body.get("revision_of"):
+        registry.ensure_numbers()                     # older proposals get their number first
+        original = load_proposal(str(body["revision_of"]))
+        p["revision_of"] = {"id": original["id"], "number": original.get("number", "")}
+    p["number"] = registry.assign_number(p.get("revision_of"))
     d = OUTPUT_DIR / p["id"]
     d.mkdir(parents=True, exist_ok=True)
     (d / "proposal.json").write_text(json.dumps(p, ensure_ascii=False, indent=1), encoding="utf-8")
+    # the wizard's full input (incl. unticked services) – used by "Edit", never sent to clients
+    (d / "request.json").write_text(json.dumps(raw, ensure_ascii=False, indent=1), encoding="utf-8")
 
-    stem = safe_filename(f"BDO_Proposal_{p['client']['company']}_{p['client']['date']}")
+    stem = safe_filename(f"BDO_Proposal_{p['number']}_{p['client']['company']}")
     files, errors = {}, {}
     if "pptx" in formats or "pdf" in formats:
         pptx = generate_pptx(p, d / f"{stem}.pptx")
@@ -171,7 +181,16 @@ def api_create():
     links = {k: url_for("download", pid=p["id"], name=v) for k, v in files.items()}
     if "html" in formats:
         links["online"] = url_for("online", pid=p["id"])   # preview for staff on the LAN
-    return jsonify({"id": p["id"], "files": links, "errors": errors})
+    return jsonify({"id": p["id"], "number": p["number"], "files": links, "errors": errors})
+
+
+@app.get("/api/proposals/<pid>")
+def api_get_proposal(pid):
+    """A saved proposal and the wizard input it was made from, for "Edit"."""
+    d = proposal_dir(pid)
+    req = d / "request.json"
+    return jsonify({"proposal": load_proposal(pid),
+                    "request": json.loads(req.read_text(encoding="utf-8")) if req.exists() else None})
 
 
 @app.get("/proposals/<pid>/files/<path:name>")
@@ -187,13 +206,10 @@ def online(pid):
 
 @app.get("/proposals")
 def list_proposals():
-    rows = []
-    for d in sorted(OUTPUT_DIR.glob("*/proposal.json"), reverse=True):
-        p = json.loads(d.read_text(encoding="utf-8"))
-        files = {f.suffix[1:]: url_for("download", pid=p["id"], name=f.name)
-                 for f in sorted(d.parent.iterdir()) if f.suffix in (".pptx", ".pdf", ".html")}
-        rows.append({"id": p["id"], "company": p["client"]["company"], "title": p["client"]["title"],
-                     "date": p["client"]["date"], "online": url_for("online", pid=p["id"]), "files": files})
+    rows = registry.list_proposals()
+    for r in rows:
+        r["online"] = url_for("online", pid=r["id"])
+        r["files"] = {Path(n).suffix[1:]: url_for("download", pid=r["id"], name=n) for n in r["files"]}
     return jsonify(rows)
 
 

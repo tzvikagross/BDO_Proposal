@@ -12,11 +12,13 @@
   const CAT = await readJson(await fetch(BASE + '/api/catalog'));
   let clientType = 'accounting';
   let titleTouched = false;
+  let editing = null;          // {id, number, company} while revising a previous proposal
 
   // ---------- step navigation
   function go(n) {
     $$('.step').forEach(s => s.classList.toggle('on', s.id === 'step-' + n));
     $$('#steps li').forEach(li => li.classList.toggle('on', li.dataset.step == n));
+    $('#editBanner').hidden = !editing;
     if (n == 4) renderSummary();
     window.scrollTo({ top: 0 });
   }
@@ -28,7 +30,8 @@
 
   // ---------- step 1
   const NO_AMOUNT = new Set(['Included']);
-  const fmt = v => (v === null || v === undefined || v === '') ? '' : Number(v).toLocaleString('en-US', { maximumFractionDigits: 2 });
+  const fmt = v => (v === null || v === undefined || v === '') ? '' :
+    (isNaN(Number(String(v).replace(/,/g, ''))) ? String(v) : Number(String(v).replace(/,/g, '')).toLocaleString('en-US', { maximumFractionDigits: 2 }));
   let currency = CAT.client_types[clientType].default_currency || CAT.currencies[0];
   let currencyTouched = false;
   $('#date').valueAsDate = new Date();
@@ -39,7 +42,12 @@
   $('#scope').innerHTML = CAT.scope_fields.map(f => `<label>${esc(f.label)}<input data-scope="${f.id}"></label>`).join('');
   $$('select.currency').forEach(sel => sel.innerHTML = CAT.currencies.map(c => `<option>${c}</option>`).join(''));
   $('#title').addEventListener('input', () => titleTouched = true);
-  $$('input[name=ctype]').forEach(r => r.addEventListener('change', () => { clientType = r.value; applyType(); }));
+  $$('input[name=ctype]').forEach(r => r.addEventListener('change', () => {
+    if (editing && !confirm('Changing the client type replaces the services and fees with that type\'s defaults. Continue?')) {
+      $$('input[name=ctype]').forEach(x => x.checked = x.value === clientType); return;
+    }
+    clientType = r.value; applyType();
+  }));
   $$('select.currency').forEach(sel => sel.addEventListener('change', () => {
     if (!setCurrency(sel.value)) sel.value = currency; else currencyTouched = true;
   }));
@@ -92,9 +100,10 @@
     }
     const inc = r.selected !== false && r.include !== false;
     const fees = r.fees || {};
-    const fee = currency in fees ? fees[currency] : r.fee;
+    const fee = ('fee' in r) ? r.fee : fees[currency];          // saved proposals keep their own fee
     const noAmt = NO_AMOUNT.has(r.unit);
-    return `<div class="row${inc ? '' : ' off'}" data-type="item" data-id="${esc(r.id || '')}" data-fees="${esc(JSON.stringify(fees))}">
+    const edited = ('fee' in r) && currency in fees && !noAmt && String(fees[currency] ?? '') !== String(r.fee ?? '').replace(/,/g, '').trim();
+    return `<div class="row${inc ? '' : ' off'}${edited ? ' edited' : ''}" data-type="item" data-id="${esc(r.id || '')}" data-fees="${esc(JSON.stringify(fees))}">
       <span class="inc"><input type="checkbox" ${inc ? 'checked' : ''} title="Include in proposal"></span>
       <div class="feebox"><span class="cur-label">${currency}</span><input class="fee" inputmode="decimal" value="${esc(fmt(fee))}" placeholder="Fee" ${noAmt ? 'disabled' : ''}></div>
       <select class="unit" title="Fee unit">${unitOptions(r.unit || 'Monthly')}</select>
@@ -198,7 +207,7 @@
     const items = p.groups.reduce((n, g) => n + g.rows.filter(r => r.type === 'item' && r.include).length, 0);
     const team = $$('input[name=bio]:checked').map(c => c.dataset.name);
     const missing = p.groups.flatMap(g => g.rows.filter(r => r.type === 'item' && r.include && !NO_AMOUNT.has(r.unit) && !r.fee).map(r => r.description[0] || '(no description)'));
-    $('#summary').innerHTML = `<b>${esc(p.client.company)}</b> · ${esc(CAT.client_types[clientType].label)} · ${esc(p.client.title)} · fees in <b>${currency}</b><br>
+    $('#summary').innerHTML = (editing ? `<p class="rev-note">Revision of proposal <b>${esc(editing.number)}</b> – generating creates a new proposal; the original is kept.</p>` : '') + `<b>${esc(p.client.company)}</b> · ${esc(CAT.client_types[clientType].label)} · ${esc(p.client.title)} · fees in <b>${currency}</b><br>
       Contact: ${esc((p.client.salutation + ' ' + p.client.contact_name).trim() || '—')} · Opportunity ${esc(p.client.opportunity || '000000')}<br>
       Engagement team: ${team.length ? esc(team.join(', ')) : '<i>none selected</i>'}<br>
       ${p.groups.length} service segments, ${items} services:
@@ -214,11 +223,13 @@
     const btn = $('#generate'); btn.disabled = true; btn.textContent = 'Generating…';
     res.innerHTML = '';
     try {
-      const r = await fetch(BASE + '/api/proposals', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ proposal: collect(), formats }) });
+      const body = { proposal: collect(), formats };
+      if (editing) body.revision_of = editing.id;
+      const r = await fetch(BASE + '/api/proposals', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
       const j = await readJson(r);
       if (!r.ok) throw new Error(j.error || r.statusText);
       const label = { pptx: 'Download PowerPoint', pdf: 'Download PDF', html: 'Download HTML file (to email)', online: 'Preview HTML ↗' };
-      res.innerHTML = `<div class="ok"><b>Proposal ready.</b> Reference ${esc(j.id)}<br>
+      res.innerHTML = `<div class="ok"><b>Proposal ${esc(j.number)} is ready.</b>${editing ? ` (a revision of ${esc(editing.number)}; the original is unchanged)` : ''}<br>
         ${Object.entries(j.files).map(([k, u]) => `<a class="dl" href="${esc(u)}" ${k === 'online' ? 'target="_blank" rel="noopener"' : ''}>${label[k] || k}</a>`).join('')}
         ${j.files.html ? `<p style="font-size:13px;margin:12px 0 0">Email the HTML file to the client. They open it on their own computer, sign in the <b>Accept &amp; Sign</b> tab with their name or initials, download the signed PDF and email it back to you. The file works offline and never contacts this server.</p>` : ''}
         ${Object.entries(j.errors || {}).map(([k, v]) => `<p class="err" style="margin-top:10px">${esc(k.toUpperCase())}: ${esc(v)}</p>`).join('')}</div>`;
@@ -227,17 +238,88 @@
     } finally { btn.disabled = false; btn.textContent = 'Generate'; }
   });
 
-  // ---------- history
+  // ---------- previous proposals: search, preview, edit
+  let HIST = [];
+  const histText = r => [r.number, r.revision_of, r.date, r.company, r.contact, r.opportunity, r.client_type, r.title, r.currency,
+                         Object.keys(r.files || {}).join(' ')].join(' ').toLowerCase();
+  function renderHistory() {
+    const words = $('#histSearch').value.toLowerCase().split(/\s+/).filter(Boolean);
+    const rows = HIST.filter(r => words.every(w => r._text.includes(w)));
+    $('#histCount').textContent = words.length ? `${rows.length} of ${HIST.length} proposals` : `${HIST.length} proposals`;
+    $('#histTable').innerHTML = '<thead><tr><th>Number</th><th>Date</th><th>Client</th><th>Contact</th><th>Opportunity</th><th>Services</th><th>Files</th><th></th></tr></thead><tbody>'
+      + (rows.map(r => `<tr>
+        <td class="num"><b>${esc(r.number)}</b></td><td>${esc(r.date)}</td><td>${esc(r.company)}</td><td>${esc(r.contact)}</td>
+        <td>${esc(r.opportunity)}</td><td>${esc(r.title)}<br><small>${esc(r.client_type)}${r.currency ? ' · ' + esc(r.currency) : ''}</small></td>
+        <td>${Object.entries(r.files || {}).map(([k, u]) => `<a href="${esc(u)}">${k.toUpperCase()}</a>`).join(' · ') || '—'}</td>
+        <td class="acts"><a href="${esc(r.online)}" target="_blank" rel="noopener">Preview</a><a href="#" class="edit-link" data-id="${esc(r.id)}">Edit</a></td></tr>`).join('')
+        || `<tr><td colspan="8">${HIST.length ? 'No proposals match your search.' : 'No proposals yet.'}</td></tr>`) + '</tbody>';
+  }
   $('#historyLink').addEventListener('click', async e => {
     e.preventDefault();
-    const rows = await readJson(await fetch(BASE + '/proposals'));
-    $('#histTable').innerHTML = '<tr><th>Date</th><th>Client</th><th>Services</th><th>Files</th><th></th></tr>' + (rows.map(r =>
-      `<tr><td>${esc(r.date)}</td><td>${esc(r.company)}</td><td>${esc(r.title)}</td>
-        <td>${Object.entries(r.files || {}).map(([k, u]) => `<a href="${esc(u)}">${k.toUpperCase()}</a>`).join(' · ') || '—'}</td>
-        <td><a href="${esc(r.online)}" target="_blank" rel="noopener">Preview</a></td></tr>`).join('') || '<tr><td colspan="5">No proposals yet.</td></tr>');
+    HIST = (await readJson(await fetch(BASE + '/proposals'))).map(r => ({ ...r, _text: histText(r) }));
+    renderHistory();
     $$('.step').forEach(s => s.classList.toggle('on', s.id === 'step-history'));
     $$('#steps li').forEach(li => li.classList.remove('on'));
+    $('#editBanner').hidden = true;
+    $('#histSearch').focus();
   });
+  $('#histSearch').addEventListener('input', renderHistory);
+  $('#histTable').addEventListener('click', async e => {
+    const a = e.target.closest('.edit-link'); if (!a) return;
+    e.preventDefault();
+    try { await loadForEdit(a.dataset.id); } catch (err) { alert('Could not open the proposal: ' + err.message); }
+  });
+
+  // ---------- edit: fill the wizard from a saved proposal (the result is saved as a new revision)
+  const catFees = (segId, rowId) => {
+    const seg = CAT.segments.find(s => s.id === segId);
+    const row = seg && seg.rows.find(r => r.type === 'service' && r.id === rowId);
+    return (row && row.fees) || {};
+  };
+  const fromNormalised = g => ({        // proposals made before the wizard input was saved
+    id: g.id, section: g.section, title: g.title, footnotes: g.footnotes, bullets: g.bullets,
+    fee_header: String(g.fee_header || 'Cost').replace(/\s*\([A-Z]{3}\)\s*$/, ''),
+    rows: g.rows.map(r => r.type === 'subheader' ? { type: 'subheader', text: r.text, note: r.note || '' }
+      : { type: 'item', id: r.id, include: true, fee: r.fee == null ? '' : r.fee, unit: r.unit, description: r.description }),
+  });
+  function buildGroupsFrom(saved) {
+    $('#groups').innerHTML = saved.map(g => groupHtml({
+      id: g.id, name: g.title, section: g.section, footnotes: g.footnotes, bullets: g.bullets, fee_header: g.fee_header,
+      rows: g.rows.map(r => r.type === 'subheader' ? r : { ...r, fees: catFees(g.id, r.id) }),
+    }, true)).join('');
+    const others = CAT.segments.filter(s => !saved.some(g => g.id === s.id));
+    $('#groupsMore').innerHTML = others.map(s => groupHtml(s, false)).join('');
+    $('.more').style.display = others.length ? '' : 'none';
+    $$('.group').forEach(countGroup);
+  }
+  async function loadForEdit(id) {
+    const j = await readJson(await fetch(`${BASE}/api/proposals/${encodeURIComponent(id)}`));
+    if (j.error) throw new Error(j.error);
+    const p = j.proposal, req = j.request;
+    const c = (req && req.client) || p.client;
+    $('#company').value = c.company || ''; $('#contact').value = c.contact_name || '';
+    $('#salutation').value = c.salutation || ''; $('#opportunity').value = c.opportunity || '';
+    $('#title').value = c.title || p.client.title || ''; titleTouched = true;
+    $('#date').valueAsDate = new Date();                                  // the revision is dated today
+    clientType = CAT.client_types[c.client_type] ? c.client_type : clientType;
+    $$('input[name=ctype]').forEach(x => x.checked = x.value === clientType);
+    $$('.type').forEach(l => l.classList.toggle('on', $('input', l).value === clientType));
+    const cur = c.currency || p.client.currency;
+    if (CAT.currencies.includes(cur)) currency = cur;
+    currencyTouched = true; $$('select.currency').forEach(x => x.value = currency);
+    $$('[data-scope]').forEach(i => i.value = '');
+    if (req && req.scope) Object.entries(req.scope).forEach(([k, v]) => { const i = $(`[data-scope="${k}"]`); if (i) i.value = v; });
+    else (p.scope || []).forEach(r => { const f = CAT.scope_fields.find(f => f.label === r.label); const i = f && $(`[data-scope="${f.id}"]`); if (i) i.value = r.value; });
+    if ($$('[data-scope]').some(i => i.value)) $('details.scope').open = true;
+    const team = req && Array.isArray(req.team) ? req.team : (p.team || []).map(m => m.id);
+    $$('input[name=bio]').forEach(cb => cb.checked = team.includes(cb.value)); countBios();
+    buildGroupsFrom((req && req.groups) || (p.groups || []).map(fromNormalised));
+    editing = { id: p.id, number: p.number || p.id, company: c.company };
+    $('#editBanner').innerHTML = `Editing a copy of proposal <b>${esc(editing.number)}</b> – ${esc(editing.company)}. Generating saves a <b>new</b> proposal (a revision); the original is kept.
+      <a href="${BASE}/">Start a new proposal instead</a>`;
+    $('#result').innerHTML = '';
+    go(1);
+  }
 
   // ---------- engagement team (bios)
   function bioCard(b, checked) {

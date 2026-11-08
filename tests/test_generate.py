@@ -270,3 +270,57 @@ def test_fee_column_on_the_right(tmp_path):
         assert t.columns[len(t.columns) - 1].width < t.columns[0].width  # narrow fee column last
     scope = next(t for t in tables if t not in fee_tables)
     assert scope.rows[1].cells[0].text == "Number of employees" and last(scope.rows[1]).text == "5"
+
+
+# ---------------------------------------------------------------- proposal numbers, edit = new revision
+@pytest.fixture
+def client_out(tmp_path, monkeypatch):
+    import app as appmod
+    import proposal.model as model
+    monkeypatch.setattr(appmod, "OUTPUT_DIR", tmp_path)
+    monkeypatch.setattr(model, "OUTPUT_DIR", tmp_path)
+    return app.test_client(), tmp_path
+
+
+def test_numbers_and_revisions(client_out):
+    import datetime as dt
+    c, out = client_out
+    year = dt.date.today().year
+    req = default_proposal("payroll")
+    req["groups"][0]["rows"][1]["include"] = False                  # an unticked service
+    a = c.post("/api/proposals", json={"proposal": req, "formats": ["html"]}).get_json()
+    b = c.post("/api/proposals", json={"proposal": default_proposal("accounting"), "formats": ["html"]}).get_json()
+    assert a["number"] == f"{year}-0001" and b["number"] == f"{year}-0002"
+
+    # edit = load the saved wizard input, generate again as a revision
+    got = c.get(f"/api/proposals/{a['id']}").get_json()
+    assert got["request"]["groups"][0]["rows"][1]["include"] is False   # unticked services are kept for editing
+    assert got["proposal"]["number"] == a["number"]
+    r1 = c.post("/api/proposals", json={"proposal": got["request"], "formats": ["html"], "revision_of": a["id"]}).get_json()
+    r2 = c.post("/api/proposals", json={"proposal": got["request"], "formats": ["html"], "revision_of": r1["id"]}).get_json()
+    assert r1["number"] == f"{year}-0001-R1" and r2["number"] == f"{year}-0001-R2"
+    assert r1["id"] != a["id"] and (out / a["id"] / "proposal.json").exists()       # original kept
+
+    rows = c.get("/proposals").get_json()
+    assert {r["number"] for r in rows} == {a["number"], b["number"], r1["number"], r2["number"]}
+    row = next(r for r in rows if r["number"] == r1["number"])
+    assert row["revision_of"] == a["number"] and row["files"]["html"].endswith(".html")
+    assert "request.json" not in "".join(row["files"].values())
+
+    # the HTML sent to clients carries the number but not the unticked services
+    html = (out / r1["id"]).glob("*.html").__next__().read_text(encoding="utf-8")
+    assert f"Proposal {r1['number']}" in html and "request" not in json.loads(
+        html.split("const PROPOSAL = ")[1].split(";\nconst LOGO")[0])
+
+
+def test_old_proposals_get_numbers(client_out):
+    c, out = client_out
+    for created in ("2025-03-01T10:00:00", "2025-01-15T09:00:00"):
+        p = normalise(default_proposal("payroll"))
+        p["created"], p["id"] = created, "old-" + created[:10]
+        (out / p["id"]).mkdir()
+        (out / p["id"] / "proposal.json").write_text(json.dumps(p), encoding="utf-8")
+    rows = {r["id"]: r["number"] for r in c.get("/proposals").get_json()}
+    assert rows == {"old-2025-01-15": "2025-0001", "old-2025-03-01": "2025-0002"}
+    got = c.get("/api/proposals/old-2025-01-15").get_json()
+    assert got["request"] is None and got["proposal"]["number"] == "2025-0001"

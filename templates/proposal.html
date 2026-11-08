@@ -271,12 +271,13 @@ footer{border-top:1px solid var(--line);color:var(--muted);font-size:12px;paddin
   </div>
 </section>
 </main>
-<footer>BDO Ziv Haft, an Israeli partnership, is a member of BDO International Limited, a UK company limited by guarantee, and forms part of the international BDO network of independent member firms. · Proposal {{ p.id }}</footer>
+<footer>BDO Ziv Haft, an Israeli partnership, is a member of BDO International Limited, a UK company limited by guarantee, and forms part of the international BDO network of independent member firms. · Proposal {{ p.number or p.id }}</footer>
 
 <script>{{ jspdf|safe }}</script>
 <script>
 const PROPOSAL = {{ p_json|safe }};
 const LOGO = {{ a.logo|tojson }};
+const PNUM = PROPOSAL.number || PROPOSAL.id;
 (function(){
   const tabs=[...document.querySelectorAll('nav.tabs button')];
   function show(id,push){
@@ -333,7 +334,7 @@ const LOGO = {{ a.logo|tojson }};
   const fname=safe(PROPOSAL.client.company||'proposal')+'_Signed_Proposal.pdf';
   const c=PROPOSAL.client;
   $('mailBtn').href='mailto:'+encodeURIComponent(PROPOSAL.firm.email||'')+'?subject='+encodeURIComponent(`Signed proposal – ${c.company} (${c.opportunity})`)
-    +'&body='+encodeURIComponent(`Hello ${PROPOSAL.firm.signatory||''},\n\nPlease find attached our signed acceptance of the BDO proposal for ${c.title} (proposal ${PROPOSAL.id}).\n\nRegards`);
+    +'&body='+encodeURIComponent(`Hello ${PROPOSAL.firm.signatory||''},\n\nPlease find attached our signed acceptance of the BDO proposal for ${c.title} (proposal ${PNUM}).\n\nRegards`);
 
   async function fingerprint(){
     try{const data=new TextEncoder().encode(JSON.stringify({client:c,groups:PROPOSAL.groups,terms:PROPOSAL.terms}));
@@ -367,7 +368,7 @@ const LOGO = {{ a.logo|tojson }};
     const {jsPDF}=window.jspdf; const doc=new jsPDF({unit:'mm',format:'a4'});
     const W=210,M=18,CW=W-2*M; let y=22;
     const ink=[51,51,51], red=[232,26,59], slate=[101,124,145], band=[238,240,243], sub=[217,222,228], grey=[110,110,110];
-    doc.setProperties({title:`Signed proposal – ${c.company}`,subject:`Acceptance of BDO proposal ${PROPOSAL.id}`,
+    doc.setProperties({title:`Signed proposal – ${c.company}`,subject:`Acceptance of BDO proposal ${PNUM}`,
       author:signer.name,keywords:`BDO, proposal, ${c.opportunity}`,creator:'BDO Proposal (browser)'});
     function header(){doc.setFontSize(7.5);doc.setTextColor(...grey);doc.setFont('helvetica','normal');
       doc.text(`${c.company}  ·  ${c.title}  ·  Opportunity ${c.opportunity}`,M,12);
@@ -406,7 +407,7 @@ const LOGO = {{ a.logo|tojson }};
     if(signer.hash) text(`Document fingerprint (SHA-256 of the accepted terms and fees): ${signer.hash}`,7.6,{color:[85,85,85],after:0.8});
     const n=doc.getNumberOfPages();
     for(let i=1;i<=n;i++){doc.setPage(i);doc.setFont('helvetica','normal');doc.setFontSize(7.5);doc.setTextColor(...grey);
-      doc.text(`Proposal ${PROPOSAL.id}`,M,287);doc.text(`Initials: ${signer.initials}`,W/2,287,{align:'center'});doc.text(`Page ${i} of ${n}`,W-M,287,{align:'right'})}
+      doc.text(`Proposal ${PNUM}`,M,287);doc.text(`Initials: ${signer.initials}`,W/2,287,{align:'center'});doc.text(`Page ${i} of ${n}`,W-M,287,{align:'right'})}
     return doc.output('blob');
   }
 })();

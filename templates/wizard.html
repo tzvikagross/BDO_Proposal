@@ -19,6 +19,7 @@
 </header>
 
 <main>
+<div class="edit-banner" id="editBanner" hidden></div>
 <!-- STEP 1 -->
 <section class="step on" id="step-1">
   <h1>Client details</h1>
@@ -86,7 +87,12 @@
 
 <section class="step" id="step-history">
   <h1>Previous proposals</h1>
-  <table class="hist-table" id="histTable"></table>
+  <div class="hist-tools">
+    <input type="search" id="histSearch" placeholder="Search by number, client, contact, opportunity, services, date…" aria-label="Search proposals">
+    <span id="histCount"></span>
+  </div>
+  <p class="hint"><b>Edit</b> opens a copy of the proposal in the wizard. Generating it creates a new proposal (a revision such as 2026-0001-R1); the original is never changed.</p>
+  <div class="hist-wrap"><table class="hist-table" id="histTable"></table></div>
   <div class="nav"><button class="btn2" data-next="1">← Back to wizard</button><span></span></div>
 </section>
 </main>
