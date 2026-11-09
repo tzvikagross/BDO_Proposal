@@ -1,7 +1,9 @@
 """Proposal numbers and the list of generated proposals (the output folder).
 
-Numbers look like 2026-0001 (year of creation + running number). A revision made with
-"Edit" keeps the original's number with a suffix: 2026-0001-R1, 2026-0001-R2, ...
+Numbers look like LF26-0001: the two letters of the client type (set in Admin), the
+year (two digits) and a running number per letters and year. A revision made with "Edit"
+keeps the original's number with a suffix: LF26-0001-R1, LF26-0001-R2, ...
+Numbers issued in the earlier format (2026-0001) are kept as they are.
 The counters live in output/numbers.json; proposals created before numbering existed
 get a number the first time the list is read (in order of creation).
 """
@@ -15,7 +17,7 @@ from pathlib import Path
 
 from . import model
 
-NUMBER_RE = re.compile(r"^(\d{4}-\d{4})(?:-R(\d+))?$")
+NUMBER_RE = re.compile(r"^([A-Z]{2}\d{2}-\d{4}|\d{4}-\d{4})(?:-R(\d+))?$")
 _lock = threading.RLock()
 
 
@@ -54,12 +56,12 @@ def _all_proposals() -> list[tuple[Path, dict]]:
     return out
 
 
-def _next_new(counters: dict, year: int, existing: set[str]) -> str:
-    key = str(year)
+def _next_new(counters: dict, code: str, year: int, existing: set[str]) -> str:
+    key = f"{code}{year % 100:02d}"
     n = int(counters.get(key, 0))
     while True:
         n += 1
-        number = f"{year}-{n:04d}"
+        number = f"{key}-{n:04d}"
         if number not in existing:
             counters[key] = n
             return number
@@ -85,19 +87,28 @@ def ensure_numbers() -> None:
             return
         counters = _load_counters()
         existing = {p.get("number") for _, p in props if p.get("number")}
+        types = _client_types()
         for created, f, p in missing:
             try:
                 year = dt.datetime.fromisoformat(created).year
             except ValueError:
                 year = dt.date.today().year
-            p["number"] = _next_new(counters, year, existing)
+            code = p.get("client", {}).get("client_type_code") or types.get(p.get("client", {}).get("client_type"), {}).get("code") or "XX"
+            p["number"] = _next_new(counters, code, year, existing)
             existing.add(p["number"])
             f.write_text(json.dumps(p, ensure_ascii=False, indent=1), encoding="utf-8")
         _save_counters(counters)
 
 
-def assign_number(revision_of: dict | None = None) -> str:
-    """Reserve the number for a new proposal, or for a revision of *revision_of*."""
+def _client_types() -> dict:
+    from .catalog import load
+    try:
+        return load()["client_types"]
+    except Exception:
+        return {}
+
+
+def _number(code: str, revision_of: dict | None, reserve: bool) -> str:
     with _lock:
         ensure_numbers()
         counters = _load_counters()
@@ -105,9 +116,21 @@ def assign_number(revision_of: dict | None = None) -> str:
         if revision_of:
             number = _next_revision(counters, base_number(revision_of["number"]), existing)
         else:
-            number = _next_new(counters, dt.date.today().year, existing)
-        _save_counters(counters)
+            number = _next_new(counters, code, dt.date.today().year, existing)
+        if reserve:
+            _save_counters(counters)
         return number
+
+
+def assign_number(code: str, revision_of: dict | None = None) -> str:
+    """Reserve the number for a new proposal of the client type with letters *code*,
+    or for a revision of *revision_of*."""
+    return _number(code, revision_of, reserve=True)
+
+
+def peek_number(code: str, revision_of: dict | None = None) -> str:
+    """The number the next proposal would get (shown in the wizard; not reserved)."""
+    return _number(code, revision_of, reserve=False)
 
 
 def list_proposals() -> list[dict]:

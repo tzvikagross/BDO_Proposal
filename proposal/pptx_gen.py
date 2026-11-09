@@ -2,7 +2,7 @@
 
 The template is kept intact (branding, about-BDO slides); only these parts change:
   * slide 1  – company name, proposal title, date
-  * slide 2  – opportunity number, contact name, company
+  * slide 2  – proposal number (top right), contact name, company
   * slide 5  – scope of operations table (removed when no scope was entered)
   * slides 6-12 – replaced with fee slides generated from the selected services,
     built by cloning the template's fee slide / table so the look is identical
@@ -310,21 +310,48 @@ def fill_cover(slide, p):
             _set_run(runs[0], c["date_display"])
 
 
+NUMBER_BOX_W = 1150000        # EMU – wide enough for e.g. "LF26-0001-R12" at 9pt
+NUMBER_LABEL_W = 1300000
+
+
 def fill_letter(slide, p):
     c = p["client"]
+    number = p.get("number") or c.get("opportunity", "")
+    label = box = None
     for sh in slide.shapes:
         if not sh.has_text_frame:
             continue
         paras = sh.text_frame.paragraphs
         t = sh.text_frame.text.strip()
         if t == "000000":
-            _set_run(paras[0].runs[0], c["opportunity"])
+            box = sh
+            _set_run(paras[0].runs[0], number)
+        elif t.startswith("Opportunity number"):
+            label = sh
+            _set_run(paras[0].runs[0], "Proposal number:")
+            for r in paras[0].runs[1:]:
+                r.text = ""
         elif t.startswith("Dear"):
             r = paras[1].runs
             _set_run(r[0], (c["salutation"] + " ") if c["salutation"] else "")
             _set_run(r[2], c["contact_name"])
             r = paras[2].runs
             _set_run(r[2], c["company"])
+    if box is not None:
+        # widen the red box to the left (keeping its right edge) so the whole number fits
+        right = box.left + box.width
+        box.width = NUMBER_BOX_W
+        box.left = right - NUMBER_BOX_W
+        if label is not None:
+            # one line, right-aligned, vertically centred on the box
+            label.width = NUMBER_LABEL_W
+            label.left = box.left - NUMBER_LABEL_W - 40000
+            label.top = box.top + (box.height - label.height) // 2
+            body = label.text_frame._txBody.find(q("a:bodyPr"))
+            body.set("wrap", "none")
+            body.set("anchor", "ctr")
+            ppr = label.text_frame.paragraphs[0]._p.get_or_add_pPr()
+            ppr.set("algn", "r")
 
 
 def fill_scope(slide, p):

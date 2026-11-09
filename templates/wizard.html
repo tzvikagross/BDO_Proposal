@@ -4,6 +4,9 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>BDO Proposal Generator</title>
+<link rel="icon" href="{{ url_for('static', filename='brand/favicon.ico') }}" sizes="any">
+<link rel="icon" type="image/png" href="{{ url_for('static', filename='brand/favicon-32.png') }}">
+<link rel="apple-touch-icon" href="{{ url_for('static', filename='brand/apple-touch-icon.png') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='wizard.css') }}">
 </head>
 <body>
@@ -25,7 +28,7 @@
   <h1>Client details</h1>
   <div class="grid2">
     <label>Company (client) name *<input id="company" required placeholder="e.g. GSE Mezzanine 2 L.P."></label>
-    <label>Opportunity number<input id="opportunity" placeholder="000000"></label>
+    <label>Proposal number<input id="propNumber" readonly tabindex="-1" class="readonly" title="Assigned automatically when the proposal is generated"><small class="field-hint">Assigned automatically when you generate</small></label>
     <label>Contact person – salutation
       <select id="salutation"><option>Mr.</option><option>Ms.</option><option>Mrs.</option><option>Dr.</option><option value="">(none)</option></select></label>
     <label>Contact person – name<input id="contact" placeholder="e.g. Ofer Zolty"></label>
@@ -86,16 +89,22 @@
 </section>
 
 <section class="step" id="step-history">
-  <h1>Previous proposals</h1>
-  <div class="hist-tools">
-    <input type="search" id="histSearch" placeholder="Search by number, client, contact, opportunity, services, date…" aria-label="Search proposals">
-    <span id="histCount"></span>
+  <div class="hist-head">
+    <h1>Previous proposals</h1>
+    <div class="hist-tools">
+      <span id="histCount"></span>
+      <input type="search" id="histSearch" placeholder="Search…" aria-label="Search proposals by number, client, contact, services or date" title="Search by number, client, contact, services or date">
+    </div>
   </div>
-  <p class="hint"><b>Edit</b> opens a copy of the proposal in the wizard. Generating it creates a new proposal (a revision such as 2026-0001-R1); the original is never changed.</p>
+  <p class="hint"><b>Edit</b> opens a copy of the proposal in the wizard. Generating it creates a new proposal (a revision such as LF26-0001-R1); the original is never changed.</p>
   <div class="hist-wrap"><table class="hist-table" id="histTable"></table></div>
   <div class="nav"><button class="btn2" data-next="1">← Back to wizard</button><span></span></div>
 </section>
 </main>
+<footer class="credit">
+  <span class="credit-inner"><img src="{{ url_for('static', filename='brand/tg-mark.png') }}" alt="" width="24" height="24">Developed by <b>Tzvika Gross</b></span>
+</footer>
+
 <script>window.APP_BASE = {{ BASE|tojson }};</script>
 <script src="{{ url_for('static', filename='wizard.js') }}"></script>
 </body>

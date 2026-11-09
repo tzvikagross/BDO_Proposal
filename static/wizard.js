@@ -32,13 +32,16 @@
   const NO_AMOUNT = new Set(['Included']);
   const fmt = v => (v === null || v === undefined || v === '') ? '' :
     (isNaN(Number(String(v).replace(/,/g, ''))) ? String(v) : Number(String(v).replace(/,/g, '')).toLocaleString('en-US', { maximumFractionDigits: 2 }));
+  if (!CAT.client_types[clientType]) clientType = Object.keys(CAT.client_types)[0];
   let currency = CAT.client_types[clientType].default_currency || CAT.currencies[0];
   let currencyTouched = false;
   $('#date').valueAsDate = new Date();
-  const segCount = id => CAT.segments.filter(s => (s.default_for || []).includes(id)).length;
+  const typeSegs = id => new Set((CAT.client_types[id] && CAT.client_types[id].segments) || []);
+  const segCount = id => CAT.segments.filter(s => typeSegs(id).has(s.id)).length;
+  if (!CAT.client_types[clientType]) clientType = Object.keys(CAT.client_types)[0];
   $('#types').innerHTML = Object.entries(CAT.client_types).map(([id, t]) =>
     `<label class="type${id === clientType ? ' on' : ''}"><input type="radio" name="ctype" value="${id}"${id === clientType ? ' checked' : ''}>
-      <b>${esc(t.label)}</b><small>${segCount(id)} service segments · ${esc(t.proposal_title)}</small></label>`).join('');
+      <b><span class="code">${esc(t.code || '')}</span>${esc(t.label)}</b><small>${segCount(id)} service segments · ${esc(t.proposal_title)}</small></label>`).join('');
   $('#scope').innerHTML = CAT.scope_fields.map(f => `<label>${esc(f.label)}<input data-scope="${f.id}"></label>`).join('');
   $$('select.currency').forEach(sel => sel.innerHTML = CAT.currencies.map(c => `<option>${c}</option>`).join(''));
   $('#title').addEventListener('input', () => titleTouched = true);
@@ -52,8 +55,19 @@
     if (!setCurrency(sel.value)) sel.value = currency; else currencyTouched = true;
   }));
 
+  // the number this proposal will get when it is generated (not reserved until then)
+  async function showNextNumber() {
+    const q = new URLSearchParams({ client_type: clientType });
+    if (editing) q.set('revision_of', editing.id);
+    try {
+      const j = await readJson(await fetch(`${BASE}/api/next-number?${q}`));
+      $('#propNumber').value = j.number || '';
+    } catch (e) { $('#propNumber').value = ''; }
+  }
+
   function applyType() {
     const t = CAT.client_types[clientType];
+    showNextNumber();
     $$('.type').forEach(l => l.classList.toggle('on', $('input', l).value === clientType));
     if (!titleTouched) $('#title').value = t.proposal_title;
     if (!currencyTouched && t.default_currency) currency = t.default_currency;
@@ -133,10 +147,16 @@
     const items = $$('.row[data-type=item]', g);
     $('.gcount', g).textContent = `${items.filter(r => $('.inc input', r).checked).length} of ${items.length} services`;
   }
+  // a catalog segment with each service ticked or not for the current client type
+  function forType(s) {
+    const off = new Set(((CAT.client_types[clientType] || {}).excluded || {})[s.id] || []);
+    return { ...s, rows: s.rows.map(r => r.type === 'service' ? { ...r, selected: !off.has(r.id) } : r) };
+  }
   function buildGroups() {
-    const mine = CAT.segments.filter(s => (s.default_for || []).includes(clientType));
-    const others = CAT.segments.filter(s => !(s.default_for || []).includes(clientType));
-    $('#groups').innerHTML = mine.map(s => groupHtml(s, true)).join('') || '<p class="hint">No segments are set as default for this client type – pick from “Other service segments” or set defaults in Admin.</p>';
+    const on = typeSegs(clientType);
+    const mine = CAT.segments.filter(s => on.has(s.id));
+    const others = CAT.segments.filter(s => !on.has(s.id));
+    $('#groups').innerHTML = mine.map(s => groupHtml(forType(s), true)).join('') || '<p class="hint">No segments are set for this type of client – pick from “Other service segments”, or set them in Admin.</p>';
     $('#groupsMore').innerHTML = others.map(s => groupHtml(s, false)).join('');
     $('.more').style.display = others.length ? '' : 'none';
     $$('.group').forEach(countGroup);
@@ -195,7 +215,7 @@
     $$('[data-scope]').forEach(i => { if (i.value.trim()) scope[i.dataset.scope] = i.value.trim(); });
     return {
       client: { company: $('#company').value, contact_name: $('#contact').value, salutation: $('#salutation').value,
-                opportunity: $('#opportunity').value, date: $('#date').value, client_type: clientType, title: $('#title').value,
+                date: $('#date').value, client_type: clientType, title: $('#title').value,
                 currency },
       team: $$('input[name=bio]:checked').map(c => c.value),
       scope, groups,
@@ -208,7 +228,7 @@
     const team = $$('input[name=bio]:checked').map(c => c.dataset.name);
     const missing = p.groups.flatMap(g => g.rows.filter(r => r.type === 'item' && r.include && !NO_AMOUNT.has(r.unit) && !r.fee).map(r => r.description[0] || '(no description)'));
     $('#summary').innerHTML = (editing ? `<p class="rev-note">Revision of proposal <b>${esc(editing.number)}</b> – generating creates a new proposal; the original is kept.</p>` : '') + `<b>${esc(p.client.company)}</b> · ${esc(CAT.client_types[clientType].label)} · ${esc(p.client.title)} · fees in <b>${currency}</b><br>
-      Contact: ${esc((p.client.salutation + ' ' + p.client.contact_name).trim() || '—')} · Opportunity ${esc(p.client.opportunity || '000000')}<br>
+      Contact: ${esc((p.client.salutation + ' ' + p.client.contact_name).trim() || '—')} · Proposal number <b>${esc($('#propNumber').value || '—')}</b><br>
       Engagement team: ${team.length ? esc(team.join(', ')) : '<i>none selected</i>'}<br>
       ${p.groups.length} service segments, ${items} services:
       <ul>${p.groups.map(g => `<li>${esc(g.title)} <small>(${esc(g.section)})</small> – ${g.rows.filter(r => r.type === 'item' && r.include).length} services</li>`).join('')}</ul>
@@ -240,19 +260,19 @@
 
   // ---------- previous proposals: search, preview, edit
   let HIST = [];
-  const histText = r => [r.number, r.revision_of, r.date, r.company, r.contact, r.opportunity, r.client_type, r.title, r.currency,
+  const histText = r => [r.number, r.revision_of, r.date, r.company, r.contact, r.client_type, r.title, r.currency,
                          Object.keys(r.files || {}).join(' ')].join(' ').toLowerCase();
   function renderHistory() {
     const words = $('#histSearch').value.toLowerCase().split(/\s+/).filter(Boolean);
     const rows = HIST.filter(r => words.every(w => r._text.includes(w)));
     $('#histCount').textContent = words.length ? `${rows.length} of ${HIST.length} proposals` : `${HIST.length} proposals`;
-    $('#histTable').innerHTML = '<thead><tr><th>Number</th><th>Date</th><th>Client</th><th>Contact</th><th>Opportunity</th><th>Services</th><th>Files</th><th></th></tr></thead><tbody>'
+    $('#histTable').innerHTML = '<thead><tr><th>Number</th><th>Date</th><th>Client</th><th>Contact</th><th>Services</th><th>Files</th><th></th></tr></thead><tbody>'
       + (rows.map(r => `<tr>
         <td class="num"><b>${esc(r.number)}</b></td><td>${esc(r.date)}</td><td>${esc(r.company)}</td><td>${esc(r.contact)}</td>
-        <td>${esc(r.opportunity)}</td><td>${esc(r.title)}<br><small>${esc(r.client_type)}${r.currency ? ' · ' + esc(r.currency) : ''}</small></td>
+        <td>${esc(r.title)}<br><small>${esc(r.client_type)}${r.currency ? ' · ' + esc(r.currency) : ''}</small></td>
         <td>${Object.entries(r.files || {}).map(([k, u]) => `<a href="${esc(u)}">${k.toUpperCase()}</a>`).join(' · ') || '—'}</td>
         <td class="acts"><a href="${esc(r.online)}" target="_blank" rel="noopener">Preview</a><a href="#" class="edit-link" data-id="${esc(r.id)}">Edit</a></td></tr>`).join('')
-        || `<tr><td colspan="8">${HIST.length ? 'No proposals match your search.' : 'No proposals yet.'}</td></tr>`) + '</tbody>';
+        || `<tr><td colspan="7">${HIST.length ? 'No proposals match your search.' : 'No proposals yet.'}</td></tr>`) + '</tbody>';
   }
   $('#historyLink').addEventListener('click', async e => {
     e.preventDefault();
@@ -298,7 +318,7 @@
     const p = j.proposal, req = j.request;
     const c = (req && req.client) || p.client;
     $('#company').value = c.company || ''; $('#contact').value = c.contact_name || '';
-    $('#salutation').value = c.salutation || ''; $('#opportunity').value = c.opportunity || '';
+    $('#salutation').value = c.salutation || '';
     $('#title').value = c.title || p.client.title || ''; titleTouched = true;
     $('#date').valueAsDate = new Date();                                  // the revision is dated today
     clientType = CAT.client_types[c.client_type] ? c.client_type : clientType;
@@ -315,6 +335,7 @@
     $$('input[name=bio]').forEach(cb => cb.checked = team.includes(cb.value)); countBios();
     buildGroupsFrom((req && req.groups) || (p.groups || []).map(fromNormalised));
     editing = { id: p.id, number: p.number || p.id, company: c.company };
+    showNextNumber();
     $('#editBanner').innerHTML = `Editing a copy of proposal <b>${esc(editing.number)}</b> – ${esc(editing.company)}. Generating saves a <b>new</b> proposal (a revision); the original is kept.
       <a href="${BASE}/">Start a new proposal instead</a>`;
     $('#result').innerHTML = '';

@@ -55,7 +55,7 @@ It reads `PORT`, `URL_PREFIX` (e.g. `/proposals`) and `SOFFICE_PATH`.
 - **Preview:** opens the HTML proposal.
 - **Edit:** opens a copy in the wizard, with the client details, team, scope, currency, and every service and fee as they were. Unticked services and your own added lines are included. Generating it creates a **new** proposal; the original is never changed.
 
-**Proposal numbers** look like `2026-0001` (year and running number). A revision made with Edit keeps the original number with a suffix: `2026-0001-R1`, `2026-0001-R2`, and so on. The number appears in the HTML proposal, in the client's signed PDF and in the file names.
+**Proposal numbers** look like `LF26-0001`: the two letters of the type of client (LF accounting, TC funds, RB payroll only, or whatever is set in Admin), the year in two digits, and a running number for each pair of letters. A revision made with Edit keeps the original number with a suffix: `LF26-0001-R1`, `LF26-0001-R2`, and so on. Step 1 of the wizard shows the number the proposal will get; it can't be edited. The number appears on the letter slide, in the HTML proposal, in the client's signed PDF and in the file names. Numbers issued before this format (e.g. `2026-0001`) are kept.
 
 ## Engagement-team bios (`assets/team`)
 Each person is a **single-slide PowerPoint file**, `assets/team/<id>.pptx`, holding their bio slide exactly as it should appear in the deck. Next to it:
@@ -72,19 +72,21 @@ Each person is a **single-slide PowerPoint file**, `assets/team/<id>.pptx`, hold
 
 The easiest way to make a new bio slide is to download an existing one from the wizard (*Read bio → Download slide*), then change the photo and text in PowerPoint. Bios uploaded on a server are saved in that server's `assets/team` folder. Commit them to git to keep them.
 
+## Logo and credit
+The browser-tab icon and the "Developed by Tzvika Gross" line at the bottom of every staff page come from `TGlogo.jpg`. If that image changes, run `python scripts/build_brand.py` to regenerate the files in `static/brand/`.
+
 ## Admin: the list of services
 Open **Admin** (top right of the wizard, or `/admin`) to edit the services the wizard offers. Changes are saved to **`assets/services/services.json`**, and every save keeps the previous version in `assets/services/history/` (the last 30). The Admin page has a *Restore a previous version* picker and buttons to *Export CSV* or *Download JSON*.
 
+- **Types of client** (top of the page) can be added or deleted. Each has a name, **two letters** for its proposal numbers, a cover title, a default currency, the **segments** it gets, and, inside each of those segments, which **services start ticked** in the wizard. A service added to a segment later starts ticked for every type that uses the segment, until you untick it there.
 - **Segments** are the fee tables. You can add, delete or reorder them, and set for each one:
   - its name (the table heading);
   - its section (the slide sub-title and HTML sub-section; segments with the same section share a slide);
-  - which client types it is switched on for by default;
   - its footnotes, and whether descriptions are shown as bullets.
 - **Services** are the rows of a segment. You can add, remove or reorder them. For each one you set:
   - the description (one bullet per line);
   - the **fee unit**, which is required;
-  - the **default fee in each currency**;
-  - whether it is pre-selected in the wizard.
+  - the **default fee in each currency**.
 - **Sub-headings** are grey rows that group services within a table.
 - **Fee units** is the list offered in every unit drop-down: Monthly, Hourly, Annually, Quarterly, Per case, Per employee, PePP, Per report, Per investor, One-off and Included. You can add your own units. A unit can only be removed once no service uses it. *Included* means there is no charge, so it takes no amount.
 

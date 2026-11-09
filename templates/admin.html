@@ -4,6 +4,9 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Services Admin – BDO Proposal Generator</title>
+<link rel="icon" href="{{ url_for('static', filename='brand/favicon.ico') }}" sizes="any">
+<link rel="icon" type="image/png" href="{{ url_for('static', filename='brand/favicon-32.png') }}">
+<link rel="apple-touch-icon" href="{{ url_for('static', filename='brand/apple-touch-icon.png') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='wizard.css') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='admin.css') }}">
 </head>
@@ -20,7 +23,7 @@
 
 <main>
   <h1>Services &amp; fees</h1>
-  <p class="hint">This is the list of services the wizard offers. Each <b>segment</b> becomes a separate fee table in the proposal. For every service, set a default fee in each currency and choose the fee unit. Changes are saved to <code>assets/services/services.json</code>; each save keeps the previous version under <code>assets/services/history</code>.</p>
+  <p class="hint">This is the list of services the wizard offers, and the types of client it offers them for. Each <b>segment</b> becomes a separate fee table in the proposal. For every service, set a default fee in each currency and choose the fee unit. Changes are saved to <code>assets/services/services.json</code>; each save keeps the previous version under <code>assets/services/history</code>.</p>
 
   <div class="admin-tools">
     <a class="small-btn" href="{{ url_for('api_admin_csv') }}">Export CSV</a>
@@ -28,7 +31,12 @@
     <label class="small-btn hist-pick">Restore a previous version <select id="history"><option value="">—</option></select></label>
   </div>
 
-  <section class="units-card">
+  <h2>Types of client</h2>
+  <p class="hint">Each type of client has two letters (used in proposal numbers, e.g. LF26-0001), a cover title, a default currency, and its own segments and pre-ticked services in the wizard.</p>
+  <div id="types"></div>
+  <button class="btn2 add-seg" id="addType" type="button">+ Add type of client</button>
+
+  <section class="units-card" style="margin-top:22px">
     <h2>Fee units</h2>
     <p class="hint">The units offered in the drop-down next to every fee.</p>
     <div class="chips" id="units"></div>
@@ -40,6 +48,10 @@
   <div id="segments"></div>
   <button class="btn2 add-seg" id="addSegment" type="button">+ Add segment</button>
 </main>
+<footer class="credit">
+  <span class="credit-inner"><img src="{{ url_for('static', filename='brand/tg-mark.png') }}" alt="" width="24" height="24">Developed by <b>Tzvika Gross</b></span>
+</footer>
+
 <datalist id="sections"></datalist>
 <script>window.APP_BASE = {{ BASE|tojson }};</script>
 <script src="{{ url_for('static', filename='admin.js') }}"></script>

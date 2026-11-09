@@ -62,14 +62,15 @@ def _clean_lines(desc) -> list[str]:
     return [d.strip() for d in (desc or []) if d and d.strip()]
 
 
-def segment_to_group(seg: dict, currency: str) -> dict:
-    """A catalog segment as a proposal group with the default fees in *currency*."""
+def segment_to_group(seg: dict, currency: str, excluded=()) -> dict:
+    """A catalog segment as a proposal group with the default fees in *currency*;
+    services in *excluded* start unticked."""
     rows = []
     for r in seg["rows"]:
         if r["type"] == "subheader":
             rows.append(copy.deepcopy(r))
         else:
-            rows.append({"type": "item", "id": r["id"], "include": r.get("selected", True),
+            rows.append({"type": "item", "id": r["id"], "include": r["id"] not in excluded,
                          "fee": (r.get("fees") or {}).get(currency), "unit": r["unit"],
                          "description": list(r["description"])})
     return {"id": seg["id"], "section": seg.get("section", ""), "title": seg["name"],
@@ -82,13 +83,13 @@ def default_proposal(client_type: str = "accounting", currency: str | None = Non
     cat = catalog()
     ct = cat["client_types"][client_type]
     currency = currency or ct.get("default_currency", cat["currencies"][0])
-    groups = [segment_to_group(s, currency) for s in cat["segments"] if client_type in s.get("default_for", [])]
+    from .catalog import segments_for
+    groups = [segment_to_group(s, currency, ct.get("excluded", {}).get(s["id"], [])) for s in segments_for(cat, client_type)]
     return {
         "client": {
             "company": "Example Company Ltd.",
             "contact_name": "Jane Doe",
             "salutation": "Ms.",
-            "opportunity": "000000",
             "client_type": client_type,
             "currency": currency,
             "title": ct["proposal_title"],
@@ -124,6 +125,7 @@ def normalise(req: dict) -> dict:
     client["date_display"] = f"{d.strftime('%B')} {d.year}"
     client["date_long"] = f"{d.day} {d.strftime('%B')} {d.year}"
     client["client_type_label"] = cat["client_types"][ctype]["label"]
+    client["client_type_code"] = cat["client_types"][ctype].get("code", "")
     cur = (client.get("currency") or cat["client_types"][ctype].get("default_currency") or "USD").strip().upper()
     if cur not in cat["currencies"]:
         raise ValueError(f"Unsupported currency: {cur}")

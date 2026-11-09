@@ -285,12 +285,12 @@ def client_out(tmp_path, monkeypatch):
 def test_numbers_and_revisions(client_out):
     import datetime as dt
     c, out = client_out
-    year = dt.date.today().year
+    yy = dt.date.today().year % 100
     req = default_proposal("payroll")
     req["groups"][0]["rows"][1]["include"] = False                  # an unticked service
     a = c.post("/api/proposals", json={"proposal": req, "formats": ["html"]}).get_json()
     b = c.post("/api/proposals", json={"proposal": default_proposal("accounting"), "formats": ["html"]}).get_json()
-    assert a["number"] == f"{year}-0001" and b["number"] == f"{year}-0002"
+    assert a["number"] == f"RB{yy:02d}-0001" and b["number"] == f"LF{yy:02d}-0001"   # own count per letters
 
     # edit = load the saved wizard input, generate again as a revision
     got = c.get(f"/api/proposals/{a['id']}").get_json()
@@ -298,7 +298,7 @@ def test_numbers_and_revisions(client_out):
     assert got["proposal"]["number"] == a["number"]
     r1 = c.post("/api/proposals", json={"proposal": got["request"], "formats": ["html"], "revision_of": a["id"]}).get_json()
     r2 = c.post("/api/proposals", json={"proposal": got["request"], "formats": ["html"], "revision_of": r1["id"]}).get_json()
-    assert r1["number"] == f"{year}-0001-R1" and r2["number"] == f"{year}-0001-R2"
+    assert r1["number"] == f"RB{yy:02d}-0001-R1" and r2["number"] == f"RB{yy:02d}-0001-R2"
     assert r1["id"] != a["id"] and (out / a["id"] / "proposal.json").exists()       # original kept
 
     rows = c.get("/proposals").get_json()
@@ -321,6 +321,83 @@ def test_old_proposals_get_numbers(client_out):
         (out / p["id"]).mkdir()
         (out / p["id"] / "proposal.json").write_text(json.dumps(p), encoding="utf-8")
     rows = {r["id"]: r["number"] for r in c.get("/proposals").get_json()}
-    assert rows == {"old-2025-01-15": "2025-0001", "old-2025-03-01": "2025-0002"}
+    assert rows == {"old-2025-01-15": "RB25-0001", "old-2025-03-01": "RB25-0002"}
     got = c.get("/api/proposals/old-2025-01-15").get_json()
-    assert got["request"] is None and got["proposal"]["number"] == "2025-0001"
+    assert got["request"] is None and got["proposal"]["number"] == "RB25-0001"
+
+
+def test_earlier_format_numbers_are_kept(client_out):
+    """Numbers already issued as 2026-0001 stay as they are; their revisions follow them."""
+    c, out = client_out
+    p = normalise(default_proposal("accounting"))
+    p["id"], p["number"] = "legacy", "2026-0004"
+    (out / "legacy").mkdir()
+    (out / "legacy" / "proposal.json").write_text(json.dumps(p), encoding="utf-8")
+    assert c.get("/api/next-number?client_type=accounting&revision_of=legacy").get_json()["number"] == "2026-0004-R1"
+    r = c.post("/api/proposals", json={"proposal": default_proposal("accounting"), "formats": ["html"], "revision_of": "legacy"})
+    assert r.get_json()["number"] == "2026-0004-R1"
+
+
+def test_next_number_preview_is_not_reserved(client_out):
+    import datetime as dt
+    c, _ = client_out
+    yy = dt.date.today().year % 100
+    for _ in range(2):
+        assert c.get("/api/next-number?client_type=fund_admin").get_json()["number"] == f"TC{yy:02d}-0001"
+    assert c.get("/api/next-number?client_type=nope").status_code == 400
+    n = c.post("/api/proposals", json={"proposal": default_proposal("fund_admin"), "formats": ["html"]}).get_json()["number"]
+    assert n == f"TC{yy:02d}-0001"
+    assert c.get("/api/next-number?client_type=fund_admin").get_json()["number"] == f"TC{yy:02d}-0002"
+
+
+def test_letter_slide_shows_proposal_number(tmp_path):
+    p = normalise(default_proposal("accounting"))
+    p["number"] = "LF26-0012-R2"
+    prs = Presentation(str(generate_pptx(p, tmp_path / "n.pptx")))
+    texts = [sh.text_frame.text for sh in prs.slides[1].shapes if sh.has_text_frame]
+    assert "LF26-0012-R2" in texts and "Proposal number:" in texts
+    assert not any("Opportunity" in t for t in texts)
+
+
+# ---------------------------------------------------------------- types of client (Admin)
+def test_admin_new_client_type(temp_catalog):
+    cat = temp_catalog.load()
+    types = [dict(v, id=k) for k, v in cat["client_types"].items()]
+    types.append({"id": "new_x1", "label": "Crypto client", "code": "cr", "proposal_title": "Crypto Accounting",
+                  "default_currency": "EUR", "segments": ["accounting", "hourly_rates", "missing"],
+                  "excluded": {"accounting": ["bk_5", "nope"], "payroll": ["pr_setup"]}})
+    cat["client_types"] = types
+    saved = temp_catalog.save(cat)
+    t = saved["client_types"]["crypto_client"]
+    assert t["code"] == "CR" and t["default_currency"] == "EUR"
+    assert t["segments"] == ["accounting", "hourly_rates"]            # unknown segment dropped
+    assert t["excluded"] == {"accounting": ["bk_5"]}                  # only ticked segments / known services
+    req = default_proposal("crypto_client")
+    acc = next(g for g in req["groups"] if g["id"] == "accounting")
+    assert [r["include"] for r in acc["rows"] if r["type"] == "item"][0] is False
+
+
+@pytest.mark.parametrize("change, msg", [
+    ({"code": "L1"}, "two capital letters"),
+    ({"code": "RB"}, "used by more than one"),
+    ({"label": ""}, "needs a name"),
+])
+def test_admin_client_type_validation(temp_catalog, change, msg):
+    cat = temp_catalog.load()
+    types = [dict(v, id=k) for k, v in cat["client_types"].items()]
+    types[0].update(change)
+    cat["client_types"] = types
+    with pytest.raises(ValueError, match=msg):
+        temp_catalog.save(cat)
+
+
+def test_old_catalog_format_is_upgraded():
+    from proposal.catalog import upgrade
+    old = {"client_types": {"accounting": {"label": "Accounting client"}, "other": {"label": "Other client"}},
+           "segments": [{"id": "a", "default_for": ["accounting"], "rows": [
+               {"type": "service", "id": "x", "selected": False}, {"type": "service", "id": "y"}]}]}
+    new = upgrade(old)
+    assert new["client_types"]["accounting"]["code"] == "LF" and new["client_types"]["other"]["code"] == "OT"
+    assert new["client_types"]["accounting"]["segments"] == ["a"]
+    assert new["client_types"]["accounting"]["excluded"] == {"a": ["x"]}
+    assert "default_for" not in new["segments"][0] and "selected" not in new["segments"][0]["rows"][0]

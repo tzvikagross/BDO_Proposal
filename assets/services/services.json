@@ -1,5 +1,5 @@
 {
-  "_comment": "Service catalog – edit it from the app's Admin page. Each segment is one fee table; each service has a default fee per currency and a unit from 'units'.",
+  "_comment": "Service catalog - edit it from the app's Admin page. Each segment is one fee table; each service has a default fee per currency and a unit from 'units'. Each type of client has two letters (used in proposal numbers), its segments, and the services that start unticked.",
   "currencies": [
     "USD",
     "ILS",
@@ -22,18 +22,51 @@
   "client_types": {
     "accounting": {
       "label": "Accounting client",
+      "code": "LF",
       "proposal_title": "Accounting & Outsourcing Services",
-      "default_currency": "USD"
+      "default_currency": "USD",
+      "segments": [
+        "audit_tax",
+        "company_secretary",
+        "setup",
+        "accounting",
+        "payroll",
+        "other_tax",
+        "vat_rep",
+        "hourly_rates"
+      ],
+      "excluded": {
+        "accounting": [
+          "bk_15",
+          "bk_50"
+        ],
+        "vat_rep": [
+          "il_director"
+        ]
+      }
     },
     "payroll": {
       "label": "Payroll only client",
+      "code": "RB",
       "proposal_title": "Payroll Services",
-      "default_currency": "USD"
+      "default_currency": "USD",
+      "segments": [
+        "payroll",
+        "hourly_rates"
+      ],
+      "excluded": {}
     },
     "fund_admin": {
       "label": "Fund Admin client",
+      "code": "TC",
       "proposal_title": "Fund Administration Services",
-      "default_currency": "ILS"
+      "default_currency": "ILS",
+      "segments": [
+        "fund_services",
+        "fund_compliance",
+        "hourly_rates"
+      ],
+      "excluded": {}
     }
   },
   "segments": [
@@ -41,9 +74,6 @@
       "id": "audit_tax",
       "name": "Audit & Tax Services",
       "section": "Audit, Tax & Corporate Services",
-      "default_for": [
-        "accounting"
-      ],
       "footnotes": "default",
       "bullets": true,
       "rows": [
@@ -57,7 +87,6 @@
           "description": [
             "Audit financial statements"
           ],
-          "selected": true,
           "unit": "Annually",
           "fees": {
             "USD": 4500,
@@ -72,7 +101,6 @@
           "description": [
             "Tax filing, preparation and audit"
           ],
-          "selected": true,
           "unit": "Annually",
           "fees": {
             "USD": 3500,
@@ -87,9 +115,6 @@
       "id": "company_secretary",
       "name": "Company Secretary Services",
       "section": "Audit, Tax & Corporate Services",
-      "default_for": [
-        "accounting"
-      ],
       "footnotes": "default",
       "bullets": true,
       "rows": [
@@ -103,7 +128,6 @@
           "description": [
             "Set up rep"
           ],
-          "selected": true,
           "unit": "One-off",
           "fees": {
             "USD": 500,
@@ -118,7 +142,6 @@
           "description": [
             "Annual compliance filing + 2 ad-hoc filings (change of director etc.)"
           ],
-          "selected": true,
           "unit": "Monthly",
           "fees": {
             "USD": 150,
@@ -133,7 +156,6 @@
           "description": [
             "Other ad-hoc filings (change of director etc.)"
           ],
-          "selected": true,
           "unit": "Per case",
           "fees": {
             "USD": 450,
@@ -148,9 +170,6 @@
       "id": "setup",
       "name": "Set up",
       "section": "Audit, Tax & Corporate Services",
-      "default_for": [
-        "accounting"
-      ],
       "footnotes": "default",
       "bullets": true,
       "rows": [
@@ -160,7 +179,6 @@
           "description": [
             "Opening Tax files"
           ],
-          "selected": true,
           "unit": "One-off",
           "fees": {
             "USD": 1500,
@@ -175,7 +193,6 @@
           "description": [
             "Local address"
           ],
-          "selected": true,
           "unit": "Annually",
           "fees": {
             "USD": 720,
@@ -190,9 +207,6 @@
       "id": "accounting",
       "name": "Accounting Services",
       "section": "Accounting services",
-      "default_for": [
-        "accounting"
-      ],
       "footnotes": "default",
       "bullets": true,
       "rows": [
@@ -206,7 +220,6 @@
           "description": [
             "Monthly bookkeeping – up to 5 AP invoices"
           ],
-          "selected": true,
           "unit": "Monthly",
           "fees": {
             "USD": 750,
@@ -221,7 +234,6 @@
           "description": [
             "Monthly bookkeeping – up to 15 AP invoices"
           ],
-          "selected": false,
           "unit": "Monthly",
           "fees": {
             "USD": 1250,
@@ -236,7 +248,6 @@
           "description": [
             "Monthly bookkeeping – up to 50 AP invoices"
           ],
-          "selected": false,
           "unit": "Monthly",
           "fees": {
             "USD": 2000,
@@ -255,7 +266,6 @@
           "description": [
             "Compliance filing (WHT, VAT, CIT, SoSec)"
           ],
-          "selected": true,
           "unit": "Monthly",
           "fees": {
             "USD": 350,
@@ -281,7 +291,6 @@
             "Payment Processing (upload to bank)",
             "AP Assistance"
           ],
-          "selected": true,
           "unit": "Hourly",
           "fees": {
             "USD": 150,
@@ -296,10 +305,6 @@
       "id": "payroll",
       "name": "Payroll Services",
       "section": "Payroll services",
-      "default_for": [
-        "accounting",
-        "payroll"
-      ],
       "footnotes": "default",
       "bullets": true,
       "rows": [
@@ -313,7 +318,6 @@
           "description": [
             "Payroll Setup"
           ],
-          "selected": true,
           "unit": "Per employee",
           "fees": {
             "USD": 150,
@@ -328,7 +332,6 @@
           "description": [
             "Monthly Fixed cost (including monthly and annual compliance reporting)"
           ],
-          "selected": true,
           "unit": "Monthly",
           "fees": {
             "USD": 350,
@@ -343,7 +346,6 @@
           "description": [
             "Monthly calculation – per slip"
           ],
-          "selected": true,
           "unit": "Monthly",
           "fees": {
             "USD": 50,
@@ -360,7 +362,6 @@
             "Liaising with pension operator / pension funds",
             "Providing information for Maternity leave and others"
           ],
-          "selected": true,
           "unit": "Included",
           "fees": {
             "USD": null,
@@ -375,7 +376,6 @@
           "description": [
             "New Employee on boarding / Layoff"
           ],
-          "selected": true,
           "unit": "Per case",
           "fees": {
             "USD": 150,
@@ -390,7 +390,6 @@
           "description": [
             "HR Admin"
           ],
-          "selected": true,
           "unit": "Hourly",
           "fees": {
             "USD": 125,
@@ -405,7 +404,6 @@
           "description": [
             "Advisory to leaving employee regarding pension (Optional)"
           ],
-          "selected": true,
           "unit": "Per case",
           "fees": {
             "USD": 180,
@@ -420,7 +418,6 @@
           "description": [
             "Special management reports"
           ],
-          "selected": true,
           "unit": "Hourly",
           "fees": {
             "USD": 100,
@@ -435,7 +432,6 @@
           "description": [
             "Manual G2N"
           ],
-          "selected": true,
           "unit": "Monthly",
           "fees": {
             "USD": 350,
@@ -450,7 +446,6 @@
           "description": [
             "Pension Administration – fixed fee"
           ],
-          "selected": true,
           "unit": "Monthly",
           "fees": {
             "USD": 150,
@@ -465,7 +460,6 @@
           "description": [
             "Pension Administration – per employee per pension provider"
           ],
-          "selected": true,
           "unit": "PePP",
           "fees": {
             "USD": 8,
@@ -480,9 +474,6 @@
       "id": "fund_services",
       "name": "Fund Administration Services",
       "section": "Fund administration services",
-      "default_for": [
-        "fund_admin"
-      ],
       "footnotes": "fund",
       "bullets": true,
       "rows": [
@@ -502,7 +493,6 @@
             "Capital Calls",
             "Capital Distributions"
           ],
-          "selected": true,
           "unit": "Monthly",
           "fees": {
             "USD": 1350,
@@ -517,7 +507,6 @@
           "description": [
             "Bookkeeping Services"
           ],
-          "selected": true,
           "unit": "Monthly",
           "fees": {
             "USD": 1200,
@@ -532,7 +521,6 @@
           "description": [
             "Fund controller – with annual audited Financial Statements & quarterly reviewed financials"
           ],
-          "selected": true,
           "unit": "Monthly",
           "fees": {
             "USD": 1900,
@@ -547,7 +535,6 @@
           "description": [
             "Loan Servicing & Repayment Tracking – for every 10 loans"
           ],
-          "selected": true,
           "unit": "Monthly",
           "fees": {
             "USD": 1100,
@@ -562,7 +549,6 @@
           "description": [
             "Obtain withholding certificate"
           ],
-          "selected": true,
           "unit": "One-off",
           "fees": {
             "USD": 205,
@@ -577,7 +563,6 @@
           "description": [
             "Financial Admin assistance"
           ],
-          "selected": true,
           "unit": "Hourly",
           "fees": {
             "USD": 120,
@@ -592,9 +577,6 @@
       "id": "fund_compliance",
       "name": "Fund Establishment & Compliance",
       "section": "Fund establishment & regulatory compliance",
-      "default_for": [
-        "fund_admin"
-      ],
       "footnotes": "fund",
       "bullets": true,
       "rows": [
@@ -608,7 +590,6 @@
           "description": [
             "Investor data collection and set up"
           ],
-          "selected": true,
           "unit": "One-off",
           "fees": {
             "USD": 1350,
@@ -628,7 +609,6 @@
             "FATCA / CRS report with data – generation of XML file",
             "Filing annual FATCA report & CRS report"
           ],
-          "selected": true,
           "unit": "Per report",
           "fees": {
             "USD": 810,
@@ -643,7 +623,6 @@
           "description": [
             "Filing Nil FATCA / CRS report"
           ],
-          "selected": true,
           "unit": "Per report",
           "fees": {
             "USD": 205,
@@ -658,7 +637,6 @@
           "description": [
             "Financial Admin assistance"
           ],
-          "selected": true,
           "unit": "Hourly",
           "fees": {
             "USD": 110,
@@ -679,7 +657,6 @@
             "Review KYC & AML documentation",
             "Assistance with clients' classifications for both FATCA & CRS"
           ],
-          "selected": true,
           "unit": "Per investor",
           "fees": {
             "USD": 270,
@@ -694,7 +671,6 @@
           "description": [
             "AML & KYC review for recurring investor"
           ],
-          "selected": true,
           "unit": "Per investor",
           "fees": {
             "USD": 270,
@@ -709,7 +685,6 @@
           "description": [
             "Annual World-check screening"
           ],
-          "selected": true,
           "unit": "Per investor",
           "fees": {
             "USD": 54,
@@ -724,9 +699,6 @@
       "id": "other_tax",
       "name": "Other Tax Services",
       "section": "Additional services",
-      "default_for": [
-        "accounting"
-      ],
       "footnotes": "default",
       "bullets": true,
       "rows": [
@@ -736,7 +708,6 @@
           "description": [
             "TP memo (assuming one benchmark)"
           ],
-          "selected": true,
           "unit": "One-off",
           "fees": {
             "USD": 10500,
@@ -751,7 +722,6 @@
           "description": [
             "International tax advisory (Partner hours)"
           ],
-          "selected": true,
           "unit": "Hourly",
           "fees": {
             "USD": 300,
@@ -766,9 +736,6 @@
       "id": "vat_rep",
       "name": "VAT Representation",
       "section": "Additional services",
-      "default_for": [
-        "accounting"
-      ],
       "footnotes": "default",
       "bullets": true,
       "rows": [
@@ -778,7 +745,6 @@
           "description": [
             "VAT rep set up"
           ],
-          "selected": true,
           "unit": "One-off",
           "fees": {
             "USD": 1000,
@@ -793,7 +759,6 @@
           "description": [
             "VAT representation"
           ],
-          "selected": true,
           "unit": "Monthly",
           "fees": {
             "USD": 1500,
@@ -808,7 +773,6 @@
           "description": [
             "IL director"
           ],
-          "selected": false,
           "unit": "Monthly",
           "fees": {
             "USD": 750,
@@ -823,11 +787,6 @@
       "id": "hourly_rates",
       "name": "Miscellaneous – Hourly Rates",
       "section": "Additional services",
-      "default_for": [
-        "accounting",
-        "payroll",
-        "fund_admin"
-      ],
       "footnotes": "default",
       "bullets": false,
       "rows": [
@@ -837,7 +796,6 @@
           "description": [
             "Partner"
           ],
-          "selected": true,
           "unit": "Hourly",
           "fees": {
             "USD": 300,
@@ -852,7 +810,6 @@
           "description": [
             "Senior Manager"
           ],
-          "selected": true,
           "unit": "Hourly",
           "fees": {
             "USD": 250,
@@ -867,7 +824,6 @@
           "description": [
             "Manager"
           ],
-          "selected": true,
           "unit": "Hourly",
           "fees": {
             "USD": 150,
@@ -882,7 +838,6 @@
           "description": [
             "Associate"
           ],
-          "selected": true,
           "unit": "Hourly",
           "fees": {
             "USD": 95,
@@ -897,7 +852,6 @@
           "description": [
             "Bookkeeper"
           ],
-          "selected": true,
           "unit": "Hourly",
           "fees": {
             "USD": 75,

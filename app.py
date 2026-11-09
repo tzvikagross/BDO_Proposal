@@ -24,6 +24,7 @@ from proposal.pptx_gen import generate_pptx
 
 app = Flask(__name__, template_folder=str(ROOT / "templates"), static_folder=str(ROOT / "static"))
 app.config["MAX_CONTENT_LENGTH"] = 25 * 1024 * 1024   # bio slides can be a few MB
+app.json.sort_keys = False      # keep the order of client types / segments as set in Admin
 
 @app.errorhandler(Exception)
 def api_error(e):
@@ -57,6 +58,11 @@ def proposal_dir(pid: str) -> Path:
 
 def load_proposal(pid: str) -> dict:
     return json.loads((proposal_dir(pid) / "proposal.json").read_text(encoding="utf-8"))
+
+
+@app.get("/favicon.ico")
+def favicon():
+    return send_from_directory(ROOT / "static" / "brand", "favicon.ico", mimetype="image/vnd.microsoft.icon")
 
 
 @app.get("/")
@@ -104,15 +110,18 @@ def api_admin_csv():
     cat = catalog()
     buf = io.StringIO()
     w = csv.writer(buf)
-    w.writerow(["Segment", "Section", "Type", "Description", "Unit"] + [f"Fee {c}" for c in cat["currencies"]] + ["Selected by default"])
+    types = list(cat["client_types"].items())
+    w.writerow(["Segment", "Section", "Type", "Description", "Unit"] + [f"Fee {c}" for c in cat["currencies"]]
+               + [f"Ticked for {t['code']} ({t['label']})" for _, t in types])
     for seg in cat["segments"]:
         for r in seg["rows"]:
             if r["type"] == "subheader":
-                w.writerow([seg["name"], seg["section"], "Sub-heading", r["text"], ""] + [""] * len(cat["currencies"]) + [""])
+                w.writerow([seg["name"], seg["section"], "Sub-heading", r["text"], ""] + [""] * len(cat["currencies"]) + [""] * len(types))
             else:
                 w.writerow([seg["name"], seg["section"], "Service", " / ".join(r["description"]), r["unit"]]
                            + [("" if r["fees"].get(c) is None else r["fees"][c]) for c in cat["currencies"]]
-                           + ["yes" if r.get("selected", True) else "no"])
+                           + [("yes" if seg["id"] in t["segments"] and svc_catalog.service_on(cat, tid, seg["id"], r["id"]) else "no")
+                              for tid, t in types])
     return Response("\ufeff" + buf.getvalue(), mimetype="text/csv",
                     headers={"Content-Disposition": 'attachment; filename="services.csv"'})
 
@@ -158,7 +167,9 @@ def api_create():
         registry.ensure_numbers()                     # older proposals get their number first
         original = load_proposal(str(body["revision_of"]))
         p["revision_of"] = {"id": original["id"], "number": original.get("number", "")}
-    p["number"] = registry.assign_number(p.get("revision_of"))
+    code = catalog()["client_types"][p["client"]["client_type"]].get("code", "XX")
+    p["number"] = registry.assign_number(code, p.get("revision_of"))
+    p["client"]["opportunity"] = p["number"]          # shown on the letter slide
     d = OUTPUT_DIR / p["id"]
     d.mkdir(parents=True, exist_ok=True)
     (d / "proposal.json").write_text(json.dumps(p, ensure_ascii=False, indent=1), encoding="utf-8")
@@ -182,6 +193,21 @@ def api_create():
     if "html" in formats:
         links["online"] = url_for("online", pid=p["id"])   # preview for staff on the LAN
     return jsonify({"id": p["id"], "number": p["number"], "files": links, "errors": errors})
+
+
+@app.get("/api/next-number")
+def api_next_number():
+    """The number the proposal being prepared in the wizard will get (not reserved)."""
+    cat = catalog()
+    ctype = request.args.get("client_type", "")
+    if ctype not in cat["client_types"]:
+        return jsonify({"error": "Unknown client type"}), 400
+    rev = None
+    if request.args.get("revision_of"):
+        registry.ensure_numbers()
+        orig = load_proposal(request.args["revision_of"])
+        rev = {"id": orig["id"], "number": orig.get("number", "")}
+    return jsonify({"number": registry.peek_number(cat["client_types"][ctype].get("code", "XX"), rev)})
 
 
 @app.get("/api/proposals/<pid>")

@@ -133,7 +133,7 @@ footer{border-top:1px solid var(--line);color:var(--muted);font-size:12px;paddin
   <div class="letter">
     <div class="addr">
       <div>Dear<br>{{ p.client.salutation }} <b>{{ p.client.contact_name }}</b><br>Company: <b>{{ p.client.company }}</b></div>
-      <div class="opp">Opportunity number: <b>{{ p.client.opportunity }}</b></div>
+      <div class="opp">Proposal number: <b>{{ p.number or p.client.opportunity }}</b></div>
     </div>
     {% set half = (p.letter|length + 1) // 2 %}
     {% for col in [p.letter[:half], p.letter[half:]] %}
@@ -333,7 +333,7 @@ const PNUM = PROPOSAL.number || PROPOSAL.id;
   const safe=s=>(s||'').replace(/[^\w\- ]+/g,'').trim().replace(/\s+/g,'_');
   const fname=safe(PROPOSAL.client.company||'proposal')+'_Signed_Proposal.pdf';
   const c=PROPOSAL.client;
-  $('mailBtn').href='mailto:'+encodeURIComponent(PROPOSAL.firm.email||'')+'?subject='+encodeURIComponent(`Signed proposal – ${c.company} (${c.opportunity})`)
+  $('mailBtn').href='mailto:'+encodeURIComponent(PROPOSAL.firm.email||'')+'?subject='+encodeURIComponent(`Signed proposal – ${c.company} (${PNUM})`)
     +'&body='+encodeURIComponent(`Hello ${PROPOSAL.firm.signatory||''},\n\nPlease find attached our signed acceptance of the BDO proposal for ${c.title} (proposal ${PNUM}).\n\nRegards`);
 
   async function fingerprint(){
@@ -369,9 +369,9 @@ const PNUM = PROPOSAL.number || PROPOSAL.id;
     const W=210,M=18,CW=W-2*M; let y=22;
     const ink=[51,51,51], red=[232,26,59], slate=[101,124,145], band=[238,240,243], sub=[217,222,228], grey=[110,110,110];
     doc.setProperties({title:`Signed proposal – ${c.company}`,subject:`Acceptance of BDO proposal ${PNUM}`,
-      author:signer.name,keywords:`BDO, proposal, ${c.opportunity}`,creator:'BDO Proposal (browser)'});
+      author:signer.name,keywords:`BDO, proposal, ${PNUM}`,creator:'BDO Proposal (browser)'});
     function header(){doc.setFontSize(7.5);doc.setTextColor(...grey);doc.setFont('helvetica','normal');
-      doc.text(`${c.company}  ·  ${c.title}  ·  Opportunity ${c.opportunity}`,M,12);
+      doc.text(`${c.company}  ·  ${c.title}  ·  Proposal ${PNUM}`,M,12);
       try{doc.addImage(LOGO,'PNG',W-M-22,6,22,8.5)}catch(e){} }
     function need(h){if(y+h>280){doc.addPage();header();y=22}}
     function text(t,size,opts={}){doc.setFont('helvetica',opts.bold?'bold':'normal');doc.setFontSize(size);doc.setTextColor(...(opts.color||ink));
